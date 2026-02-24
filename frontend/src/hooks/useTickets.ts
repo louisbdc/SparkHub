@@ -11,6 +11,8 @@ export function useTickets(workspaceId: string) {
     queryKey: ticketsKey(workspaceId),
     queryFn: () => ticketsApi.list(workspaceId),
     enabled: Boolean(workspaceId),
+    refetchInterval: 10_000,
+    staleTime: 8_000,
   })
 }
 
