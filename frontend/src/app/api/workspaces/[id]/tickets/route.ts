@@ -133,9 +133,31 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     if (fetchError || !ticket) return sendError('Ticket créé mais récupération échouée', 500)
 
-    // Notify assignee if different from reporter
+    const workspaceLink = `/workspaces/${id}/kanban`
+
+    // Notify all workspace members except the creator
+    const { data: members } = await supabaseAdmin
+      .from('workspace_members')
+      .select('user_id')
+      .eq('workspace_id', id)
+      .neq('user_id', userId)
+
+    if (members && members.length > 0) {
+      await Promise.all(
+        members.map((m) =>
+          createNotification(
+            m.user_id,
+            'ticket_created',
+            'Nouveau ticket',
+            `"${title}" a été créé dans le workspace`,
+            workspaceLink
+          )
+        )
+      )
+    }
+
+    // Additionally notify assignee with a specific message
     if (assigneeId && assigneeId !== userId) {
-      const workspaceLink = `/workspaces/${id}/kanban`
       await createNotification(
         assigneeId,
         'ticket_assigned',

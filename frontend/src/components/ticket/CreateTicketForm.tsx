@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateTicket } from '@/hooks/useTickets'
+import { useWorkspace } from '@/hooks/useWorkspaces'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_TYPE_LABELS,
@@ -35,6 +36,7 @@ const schema = z.object({
   description: z.string().max(10000).optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent'] as const),
   type: z.enum(['bug', 'feature', 'task', 'improvement'] as const),
+  assigneeId: z.string().uuid().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -46,8 +48,14 @@ interface CreateTicketFormProps {
 
 export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormProps) {
   const createTicket = useCreateTicket(workspaceId)
+  const { data: workspace } = useWorkspace(workspaceId)
   const [files, setFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const members = [
+    ...(workspace?.owner ? [workspace.owner] : []),
+    ...(workspace?.members.map((m) => m.user) ?? []),
+  ].filter((u, i, arr) => arr.findIndex((x) => x._id === u._id) === i)
 
   const {
     register,
@@ -152,6 +160,26 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
           </Select>
         </div>
       </div>
+
+      {/* Assignee */}
+      {members.length > 0 && (
+        <div className="space-y-2">
+          <Label>Assigné à</Label>
+          <Select onValueChange={(v) => setValue('assigneeId', v === 'none' ? undefined : v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Non assigné" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Non assigné</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m._id} value={m._id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* File attachments */}
       <div className="space-y-2">

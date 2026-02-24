@@ -164,7 +164,7 @@ export const TICKET_TYPE_LABELS: Record<TicketType, string> = {
   improvement: 'Amélioration',
 }
 
-export type NotificationType = 'ticket_assigned' | 'ticket_commented' | 'ticket_status_changed'
+export type NotificationType = 'ticket_created' | 'ticket_assigned' | 'ticket_commented' | 'ticket_status_changed'
 
 export interface Notification {
   _id: string

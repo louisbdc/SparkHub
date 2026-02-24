@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Bell, CheckCheck, GitPullRequest, MessageSquare, ArrowRightLeft } from 'lucide-react'
+import { Bell, CheckCheck, GitPullRequest, MessageSquare, ArrowRightLeft, TicketPlus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -15,6 +15,7 @@ import {
 import type { Notification, NotificationType } from '@/types'
 
 const TYPE_ICON: Record<NotificationType, React.ElementType> = {
+  ticket_created: TicketPlus,
   ticket_assigned: GitPullRequest,
   ticket_commented: MessageSquare,
   ticket_status_changed: ArrowRightLeft,

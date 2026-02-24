@@ -93,7 +93,7 @@ create table if not exists attachments (
 create table if not exists notifications (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references profiles(id) on delete cascade,
-  type       text not null check (type in ('ticket_assigned', 'ticket_commented', 'ticket_status_changed')),
+  type       text not null check (type in ('ticket_created', 'ticket_assigned', 'ticket_commented', 'ticket_status_changed')),
   title      text not null,
   body       text not null default '',
   link       text not null default '',
