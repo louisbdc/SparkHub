@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Loader2, Trash2, Crown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useRemoveMember } from '@/hooks/useWorkspaces'
 import { useCurrentUser } from '@/hooks/useAuth'
 import type { Workspace } from '@/types'
@@ -48,6 +48,7 @@ export function MembersManager({ workspace }: Props) {
       {/* Owner row */}
       <div className="flex items-center gap-3 rounded-lg border p-3">
         <Avatar className="w-8 h-8">
+          <AvatarImage src={workspace.owner.avatar ?? undefined} />
           <AvatarFallback className="text-xs">
             {initials(workspace.owner.name)}
           </AvatarFallback>
@@ -70,6 +71,7 @@ export function MembersManager({ workspace }: Props) {
       {workspace.members.map(({ user, role }) => (
         <div key={user._id} className="flex items-center gap-3 rounded-lg border p-3">
           <Avatar className="w-8 h-8">
+            <AvatarImage src={user.avatar ?? undefined} />
             <AvatarFallback className="text-xs">{initials(user.name)}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">

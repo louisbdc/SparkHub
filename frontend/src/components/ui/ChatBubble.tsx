@@ -5,12 +5,13 @@ import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Check, Pencil, Reply, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MessageImageItem } from '@/components/ui/MessageImageItem'
 import type { MessageImage, MessageReply } from '@/types'
 
 interface ChatBubbleProps {
   authorName: string
+  authorAvatar?: string | null
   content: string
   createdAt: string
   updatedAt?: string
@@ -25,6 +26,7 @@ interface ChatBubbleProps {
 
 export function ChatBubble({
   authorName,
+  authorAvatar,
   content,
   createdAt,
   updatedAt,
@@ -67,6 +69,7 @@ export function ChatBubble({
       {/* Avatar — others only */}
       {!isOwn && (
         <Avatar className="w-7 h-7 shrink-0 mt-1">
+          <AvatarImage src={authorAvatar ?? undefined} />
           <AvatarFallback className="text-[10px]">
             {authorName[0].toUpperCase()}
           </AvatarFallback>

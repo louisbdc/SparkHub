@@ -228,6 +228,7 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
           <ChatBubble
             key={msg._id}
             authorName={msg.author.name}
+            authorAvatar={msg.author.avatar}
             content={msg.content}
             createdAt={msg.createdAt}
             updatedAt={msg.updatedAt}

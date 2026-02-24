@@ -6,7 +6,7 @@ import { LayoutDashboard, LogOut, Plus, Settings } from 'lucide-react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import dynamic from 'next/dynamic'
@@ -119,6 +119,7 @@ export function AppSidebar() {
       <div className="p-3 border-t shrink-0">
         <div className="flex items-center gap-3 px-2 py-2 rounded-md">
           <Avatar className="w-8 h-8 shrink-0">
+            <AvatarImage src={user?.avatar ?? undefined} />
             <AvatarFallback className="text-xs bg-muted">{initials}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
