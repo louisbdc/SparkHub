@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, LogOut, Plus, Settings } from 'lucide-react'
-import { NotificationBell } from '@/components/layout/NotificationBell'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -66,7 +65,6 @@ export function AppSidebar() {
               {label}
             </Link>
           ))}
-          <NotificationBell />
         </nav>
 
         {/* Workspaces */}

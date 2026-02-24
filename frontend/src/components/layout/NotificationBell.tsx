@@ -78,24 +78,19 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          className={cn(
-            'relative flex items-center gap-3 px-3 py-2 rounded-md text-sm w-full transition-colors',
-            'text-muted-foreground hover:bg-muted hover:text-foreground'
-          )}
-        >
-          <Bell className="w-4 h-4 shrink-0" />
-          <span>Notifications</span>
+        <button className="relative flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+          <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
-            <span className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none">
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-semibold leading-none">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
+          <span className="sr-only">Notifications</span>
         </button>
       </PopoverTrigger>
 
       <PopoverContent
-        side="right"
+        side="bottom"
         align="end"
         sideOffset={8}
         className="w-80 p-0 overflow-hidden"

@@ -3,12 +3,14 @@
 import { SettingCard } from '@/components/settings/SettingCard'
 import { ProfileForm } from '@/components/settings/ProfileForm'
 import { PasswordForm } from '@/components/settings/PasswordForm'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 
 export default function SettingsPage() {
   return (
     <div className="flex flex-col h-full">
-      <header className="flex items-center px-6 h-14 border-b shrink-0">
+      <header className="flex items-center justify-between px-6 h-14 border-b shrink-0">
         <h1 className="font-semibold text-sm">Paramètres</h1>
+        <NotificationBell />
       </header>
 
       <div className="flex-1 overflow-auto">

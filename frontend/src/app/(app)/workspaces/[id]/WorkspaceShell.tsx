@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { WorkspaceProvider, useWorkspaceContext } from './WorkspaceContext'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 
 const NAV_ITEMS = [
   { segment: 'kanban', icon: LayoutGrid, label: 'Kanban' },
@@ -57,6 +58,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
         <div className="ml-auto flex items-center gap-2">
           {/* Secondary actions */}
+          <NotificationBell />
           <Link
             href={`/workspaces/${id}/settings`}
             className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"

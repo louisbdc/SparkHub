@@ -5,6 +5,7 @@ import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useDashboardTickets } from '@/hooks/useDashboardTickets'
 import { CreateWorkspaceDialog } from '@/components/workspace/CreateWorkspaceDialog'
+import { NotificationBell } from '@/components/layout/NotificationBell'
 import { DashboardStatCards } from '@/components/dashboard/DashboardStatCards'
 import { MyTickets } from '@/components/dashboard/MyTickets'
 import { UrgentTickets } from '@/components/dashboard/UrgentTickets'
@@ -31,7 +32,10 @@ export default function DashboardPage() {
     <div className="flex flex-col h-full">
       <header className="flex items-center justify-between px-6 h-14 border-b shrink-0">
         <span className="font-semibold text-sm">Dashboard</span>
-        {isDevOrAdmin && <CreateWorkspaceDialog />}
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          {isDevOrAdmin && <CreateWorkspaceDialog />}
+        </div>
       </header>
 
       <div className="flex-1 overflow-auto">
