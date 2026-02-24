@@ -19,10 +19,11 @@ interface KanbanColumnProps {
   label: string
   tickets: Ticket[]
   onTicketClick: (ticket: Ticket) => void
+  onTicketEdit?: (ticket: Ticket) => void
   onTicketDelete: (ticketId: string) => void
 }
 
-export function KanbanColumn({ status, label, tickets, onTicketClick, onTicketDelete }: KanbanColumnProps) {
+export function KanbanColumn({ status, label, tickets, onTicketClick, onTicketEdit, onTicketDelete }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   const style = COLUMN_STYLES[status]
   const ticketIds = tickets.map((t) => t._id)
@@ -55,7 +56,7 @@ export function KanbanColumn({ status, label, tickets, onTicketClick, onTicketDe
           )}
         >
           {tickets.map((ticket) => (
-            <TicketCard key={ticket._id} ticket={ticket} onClick={onTicketClick} onDelete={onTicketDelete} />
+            <TicketCard key={ticket._id} ticket={ticket} onClick={onTicketClick} onEdit={onTicketEdit} onDelete={onTicketDelete} />
           ))}
         </div>
       </SortableContext>

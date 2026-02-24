@@ -39,7 +39,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { data: workspace } = useWorkspace(id)
   const { data: user } = useCurrentUser()
   const [createOpen, setCreateOpen] = useState(false)
-  const { selectedTicket, setSelectedTicket } = useWorkspaceContext()
+  const { selectedTicket, setSelectedTicket, editOnOpen, clearEditOnOpen } = useWorkspaceContext()
   const queryClient = useQueryClient()
   const mobileSidebar = useMobileSidebar()
 
@@ -192,6 +192,8 @@ function Shell({ children }: { children: React.ReactNode }) {
         workspaceId={id}
         onClose={() => setSelectedTicket(null)}
         onTicketChange={setSelectedTicket}
+        startInEditMode={editOnOpen}
+        onEditModeStarted={clearEditOnOpen}
       />
     </div>
   )

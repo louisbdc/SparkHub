@@ -1,9 +1,9 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { ChevronLeft, Download, Loader2, MoreVertical, Paperclip, Pencil, Send, Trash2 } from 'lucide-react'
+import { ChevronLeft, Download, Loader2, Paperclip, Send } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSkeletonVisible } from '@/hooks/useSkeletonVisible'
 import {
@@ -15,17 +15,10 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { ChatBubble, TypingIndicator } from '@/components/ui/ChatBubble'
 import { useComments, useCreateComment, useDeleteComment } from '@/hooks/useComments'
 import { useCurrentUser } from '@/hooks/useAuth'
-import { useAddAttachments, useDeleteTicket, useTickets } from '@/hooks/useTickets'
+import { useAddAttachments, useTickets } from '@/hooks/useTickets'
 import { useWorkspace } from '@/hooks/useWorkspaces'
 import { useTicketSocket } from '@/hooks/useTicketSocket'
 import { filesApi } from '@/lib/api'
@@ -47,9 +40,11 @@ interface TicketDetailPanelProps {
   workspaceId: string
   onClose: () => void
   onTicketChange?: (ticket: Ticket) => void
+  startInEditMode?: boolean
+  onEditModeStarted?: () => void
 }
 
-export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange }: TicketDetailPanelProps) {
+export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange, startInEditMode, onEditModeStarted }: TicketDetailPanelProps) {
   const [comment, setComment] = useState('')
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -75,7 +70,15 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
   const createComment = useCreateComment(workspaceId, ticket?._id ?? '')
   const deleteComment = useDeleteComment(workspaceId, ticket?._id ?? '')
   const addAttachments = useAddAttachments(workspaceId)
-  const deleteTicket = useDeleteTicket(workspaceId)
+
+  // Auto-enter edit mode when opened from the kanban card's "Modifier" action
+  useEffect(() => {
+    if (ticket && startInEditMode) {
+      setIsEditing(true)
+      onEditModeStarted?.()
+    }
+  }, [ticket?._id])
+
   const showCommentsSkeleton = useSkeletonVisible(commentsLoading)
 
   const { typingUsers, emitTypingStart, emitTypingStop } = useTicketSocket(
@@ -151,33 +154,6 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
                 <SheetTitle className="flex-1 text-base font-semibold leading-snug pr-2">
                   {liveTicket.title}
                 </SheetTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="w-7 h-7 shrink-0 text-muted-foreground hover:text-foreground"
-                      aria-label="Actions du ticket"
-                    >
-                      <MoreVertical className="w-3.5 h-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setIsEditing((v) => !v)}>
-                      <Pencil className="w-3.5 h-3.5 mr-2" />
-                      {isEditing ? "Annuler l'édition" : 'Modifier'}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => deleteTicket.mutate(liveTicket._id, { onSuccess: onClose })}
-                    >
-                      <Trash2 className="w-3.5 h-3.5 mr-2" />
-                      Supprimer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
               {!isEditing && (
                 <div className="flex flex-wrap gap-1.5 mt-2">

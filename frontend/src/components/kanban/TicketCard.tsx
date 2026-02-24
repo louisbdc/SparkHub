@@ -4,13 +4,14 @@ import { useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { MoreVertical, Trash2 } from 'lucide-react'
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { Ticket, TicketPriority, TicketType } from '@/types'
@@ -32,10 +33,11 @@ const TYPE_ICON: Record<TicketType, string> = {
 interface TicketCardProps {
   ticket: Ticket
   onClick: (ticket: Ticket) => void
+  onEdit?: (ticket: Ticket) => void
   onDelete: (ticketId: string) => void
 }
 
-export function TicketCard({ ticket, onClick, onDelete }: TicketCardProps) {
+export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: ticket._id })
   const skipClick = useRef(false)
@@ -73,12 +75,25 @@ export function TicketCard({ ticket, onClick, onDelete }: TicketCardProps) {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
+          {onEdit && (
+            <>
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onSelect={() => {
+                  skipClick.current = true
+                  setTimeout(() => { skipClick.current = false }, 0)
+                  onEdit(ticket)
+                }}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Modifier
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuItem
             className="text-destructive focus:text-destructive gap-2 cursor-pointer"
             onSelect={() => {
-              // onSelect fires synchronously in the same browser task as the
-              // subsequent stray click on the card — set the flag here, not in
-              // onOpenChange (which fires after a React re-render, too late).
               skipClick.current = true
               setTimeout(() => { skipClick.current = false }, 0)
               onDelete(ticket._id)

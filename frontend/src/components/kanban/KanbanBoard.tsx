@@ -29,9 +29,10 @@ import { TICKET_STATUS_LABELS, TICKET_STATUSES } from '@/types'
 interface KanbanBoardProps {
   workspaceId: string
   onTicketClick: (ticket: Ticket) => void
+  onTicketEdit?: (ticket: Ticket) => void
 }
 
-export function KanbanBoard({ workspaceId, onTicketClick }: KanbanBoardProps) {
+export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: KanbanBoardProps) {
   const { data: tickets = [], isLoading } = useTickets(workspaceId)
   const { data: workspace } = useWorkspace(workspaceId)
   const updateTicket = useUpdateTicket(workspaceId)
@@ -211,6 +212,7 @@ export function KanbanBoard({ workspaceId, onTicketClick }: KanbanBoardProps) {
                 label={TICKET_STATUS_LABELS[status]}
                 tickets={grouped[status]}
                 onTicketClick={onTicketClick}
+                onTicketEdit={onTicketEdit}
                 onTicketDelete={(ticketId) => deleteTicket.mutate(ticketId)}
               />
             ))}
