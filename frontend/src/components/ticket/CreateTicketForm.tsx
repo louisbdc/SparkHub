@@ -57,8 +57,7 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
     ...(workspace?.members.map((m) => m.user) ?? []),
   ].filter((u, i, arr) => arr.findIndex((x) => x._id === u._id) === i)
 
-  const devMembers = members.filter((m) => m.role === 'dev' || m.role === 'admin')
-  const soloDefault = devMembers.length === 1 ? devMembers[0] : null
+  const soloDefault = members.length === 1 ? members[0] : null
 
   const [assigneeValue, setAssigneeValue] = useState<string>('none')
 

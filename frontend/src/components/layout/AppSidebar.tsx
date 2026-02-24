@@ -37,8 +37,6 @@ export function SidebarContent() {
     .toUpperCase()
     .slice(0, 2)
 
-  const isDevOrAdmin = user?.role !== 'client'
-
   return (
     <>
       {/* Logo */}
@@ -76,15 +74,13 @@ export function SidebarContent() {
             <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground/60">
               Workspaces
             </p>
-            {isDevOrAdmin && (
-              <CreateWorkspaceDialog
-                trigger={
-                  <button className="text-muted-foreground hover:text-foreground transition-colors">
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                }
-              />
-            )}
+            <CreateWorkspaceDialog
+              trigger={
+                <button className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              }
+            />
           </div>
 
           {showWorkspacesSkeleton && (

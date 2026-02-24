@@ -27,11 +27,7 @@ export async function GET(request: NextRequest) {
 // POST /api/workspaces — create workspace
 export async function POST(request: NextRequest) {
   try {
-    const { userId, profile } = await requireAuth(request)
-
-    if (profile.role === 'client') {
-      return sendError('Accès refusé', 403)
-    }
+    const { userId } = await requireAuth(request)
 
     const body = await request.json()
     const parsed = createSchema.safeParse(body)

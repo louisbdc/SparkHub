@@ -104,7 +104,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <Settings className="w-4 h-4" />
             <span className="sr-only">Paramètres du workspace</span>
           </Link>
-          {user?.role !== 'client' && <InviteMemberDialog workspaceId={id} />}
+          {workspace?.owner._id === user?._id && <InviteMemberDialog workspaceId={id} />}
 
           {/* Divider */}
           <div className="w-px h-5 bg-border mx-1" />

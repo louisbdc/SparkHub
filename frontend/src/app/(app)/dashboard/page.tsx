@@ -10,6 +10,7 @@ import { NotificationBell } from '@/components/layout/NotificationBell'
 import { DashboardStatCards } from '@/components/dashboard/DashboardStatCards'
 import { MyTickets } from '@/components/dashboard/MyTickets'
 import { UrgentTickets } from '@/components/dashboard/UrgentTickets'
+import { AllTickets } from '@/components/dashboard/AllTickets'
 import { useMobileSidebar } from '@/components/layout/AppShell'
 
 export default function DashboardPage() {
@@ -20,7 +21,6 @@ export default function DashboardPage() {
 
   const firstName = user?.name?.split(' ')[0]
   const count = workspaces?.length ?? 0
-  const isDevOrAdmin = user?.role !== 'client'
 
   const totalMembers = workspaces
     ? new Set([
@@ -45,7 +45,7 @@ export default function DashboardPage() {
         <span className="font-semibold text-sm">Dashboard</span>
         <div className="flex items-center gap-2 ml-auto">
           <NotificationBell />
-          {isDevOrAdmin && <CreateWorkspaceDialog />}
+          <CreateWorkspaceDialog />
         </div>
       </header>
 
@@ -62,9 +62,7 @@ export default function DashboardPage() {
                 ? 'Chargement de vos projets…'
                 : count > 0
                   ? 'Voici un aperçu de vos projets actifs.'
-                  : isDevOrAdmin
-                    ? 'Créez votre premier workspace pour commencer.'
-                    : 'Vous serez notifié quand un développeur vous ajoute à un projet.'}
+                  : 'Créez votre premier workspace pour commencer.'}
             </p>
           </div>
 
@@ -121,12 +119,10 @@ export default function DashboardPage() {
               <div className="space-y-1.5">
                 <p className="font-semibold text-sm">Aucun workspace</p>
                 <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                  {isDevOrAdmin
-                    ? 'Créez un projet et invitez votre client pour commencer à collaborer.'
-                    : "Vous n'avez pas encore accès à un projet. Contactez votre développeur."}
+                  Créez un projet et invitez votre équipe pour commencer à collaborer.
                 </p>
               </div>
-              {isDevOrAdmin && <CreateWorkspaceDialog />}
+              <CreateWorkspaceDialog />
             </div>
           )}
 
@@ -144,6 +140,7 @@ export default function DashboardPage() {
             <div className="space-y-8">
               <UrgentTickets allTickets={allTickets} />
               <MyTickets allTickets={allTickets} userId={user?._id} />
+              <AllTickets allTickets={allTickets} workspaces={workspaces ?? []} />
             </div>
           )}
 

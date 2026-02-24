@@ -53,7 +53,7 @@ export default function WorkspaceSettingsPage() {
   if (!workspace) return null
 
   const isOwner = workspace.owner._id === currentUser?._id
-  const canInvite = isOwner || currentUser?.role !== 'client'
+  const canInvite = isOwner
   const totalMembers = workspace.members.length + 1
 
   return (
