@@ -21,6 +21,8 @@ import {
 import { WorkspaceProvider, useWorkspaceContext } from './WorkspaceContext'
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { ticketsApi } from '@/lib/api'
+import { useQueryClient } from '@tanstack/react-query'
+import type { Ticket } from '@/types'
 
 const NAV_ITEMS = [
   { segment: 'kanban', icon: LayoutGrid, label: 'Kanban' },
@@ -37,17 +39,29 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { data: user } = useCurrentUser()
   const [createOpen, setCreateOpen] = useState(false)
   const { selectedTicket, setSelectedTicket } = useWorkspaceContext()
+  const queryClient = useQueryClient()
 
   // Open ticket panel when navigating from a notification (?ticket=xxx)
   const ticketIdParam = searchParams.get('ticket')
   useEffect(() => {
     if (!ticketIdParam) return
-    ticketsApi.getById(id, ticketIdParam).then((ticket) => {
+
+    // Try cache first (tickets are polled every 10s — usually already there)
+    const cached = queryClient.getQueryData<Ticket[]>(['tickets', id])
+    const fromCache = cached?.find((t) => t._id === ticketIdParam)
+
+    const open = (ticket: Ticket) => {
       setSelectedTicket(ticket)
       const url = new URL(window.location.href)
       url.searchParams.delete('ticket')
       router.replace(url.pathname + url.search)
-    }).catch(() => {})
+    }
+
+    if (fromCache) {
+      open(fromCache)
+    } else {
+      ticketsApi.getById(id, ticketIdParam).then(open).catch(() => {})
+    }
   }, [ticketIdParam])
 
   return (
