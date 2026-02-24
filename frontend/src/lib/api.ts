@@ -277,6 +277,13 @@ export const ticketsApi = {
     return data.data?.tickets ?? []
   },
 
+  listChildren: async (workspaceId: string, parentId: string): Promise<Ticket[]> => {
+    const { data } = await apiClient.get<ApiResponse<{ tickets: Ticket[] }>>(
+      `/workspaces/${workspaceId}/tickets?parentId=${encodeURIComponent(parentId)}`
+    )
+    return data.data?.tickets ?? []
+  },
+
   getById: async (workspaceId: string, ticketId: string): Promise<Ticket> => {
     const { data } = await apiClient.get<ApiResponse<{ ticket: Ticket }>>(
       `/workspaces/${workspaceId}/tickets/${ticketId}`

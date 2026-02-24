@@ -191,6 +191,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         ticket={selectedTicket}
         workspaceId={id}
         onClose={() => setSelectedTicket(null)}
+        onTicketChange={setSelectedTicket}
       />
     </div>
   )

@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Download, Loader2, Paperclip, Send } from 'lucide-react'
+import { ChevronLeft, Download, Loader2, Paperclip, Send } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSkeletonVisible } from '@/hooks/useSkeletonVisible'
 import {
@@ -22,6 +22,7 @@ import { useAddAttachments, useTickets } from '@/hooks/useTickets'
 import { useTicketSocket } from '@/hooks/useTicketSocket'
 import { filesApi } from '@/lib/api'
 import { FilePreviewModal } from './FilePreviewModal'
+import { SubTicketsList } from './SubTicketsList'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_STATUS_LABELS,
@@ -36,9 +37,10 @@ interface TicketDetailPanelProps {
   ticket: Ticket | null
   workspaceId: string
   onClose: () => void
+  onTicketChange?: (ticket: Ticket) => void
 }
 
-export function TicketDetailPanel({ ticket, workspaceId, onClose }: TicketDetailPanelProps) {
+export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange }: TicketDetailPanelProps) {
   const [comment, setComment] = useState('')
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -48,6 +50,7 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose }: TicketDetail
   const { data: currentUser } = useCurrentUser()
   const { data: tickets } = useTickets(workspaceId)
   const liveTicket = (ticket && tickets?.find((t) => t._id === ticket._id)) ?? ticket
+  const parentTicket = liveTicket?.parentId ? (tickets?.find((t) => t._id === liveTicket.parentId) ?? null) : null
 
   const { data: comments = [], isLoading: commentsLoading } = useComments(
     workspaceId,
@@ -110,6 +113,16 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose }: TicketDetail
           <>
             {/* Header */}
             <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+              {parentTicket && onTicketChange && (
+                <button
+                  type="button"
+                  onClick={() => onTicketChange(parentTicket)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2 -mt-1 w-fit"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span className="truncate max-w-[240px]">{parentTicket.title}</span>
+                </button>
+              )}
               <SheetTitle className="text-base font-semibold leading-snug pr-8">
                 {liveTicket.title}
               </SheetTitle>
@@ -218,6 +231,18 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose }: TicketDetail
                   </p>
                 </div>
               </div>
+
+              {/* Sub-tickets — only for top-level tickets */}
+              {!liveTicket.parentId && onTicketChange && (
+                <>
+                  <Separator />
+                  <SubTicketsList
+                    workspaceId={workspaceId}
+                    parentId={liveTicket._id}
+                    onTicketClick={onTicketChange}
+                  />
+                </>
+              )}
 
               <Separator />
 

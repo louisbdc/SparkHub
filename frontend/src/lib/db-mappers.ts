@@ -62,6 +62,7 @@ export interface DbTicket {
   type: 'bug' | 'feature' | 'task' | 'improvement'
   reporter_id: string
   assignee_id: string | null
+  parent_id: string | null
   order: number
   created_at: string
   updated_at: string
@@ -183,6 +184,7 @@ export function mapTicket(row: DbTicket): Ticket {
     assignee: row.assignee ? mapProfile(row.assignee) : null,
     attachments: (row.attachments ?? []).map(mapAttachment),
     order: row.order,
+    parentId: row.parent_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

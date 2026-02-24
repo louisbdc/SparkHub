@@ -91,6 +91,7 @@ export interface Ticket {
   assignee: User | null
   attachments: Attachment[]
   order: number
+  parentId: string | null
   createdAt: string
   updatedAt: string
 }
@@ -130,6 +131,7 @@ export interface CreateTicketDto {
   priority: TicketPriority
   type: TicketType
   assigneeId?: string
+  parentId?: string | null
 }
 
 export interface UpdateTicketDto {

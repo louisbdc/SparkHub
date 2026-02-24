@@ -23,23 +23,34 @@ const createSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   type: z.enum(['bug', 'feature', 'task', 'improvement']).default('task'),
   assigneeId: z.string().uuid().optional().nullable(),
+  parentId: z.string().uuid().optional().nullable(),
 })
 
 // GET /api/workspaces/:id/tickets
+// ?parentId=<uuid>  → fetch sub-tickets of a parent
+// (no param)        → fetch top-level tickets only (Kanban)
 export async function GET(request: NextRequest, { params }: Params) {
   try {
     const { userId } = await requireAuth(request)
     const { id } = await params
+    const parentId = new URL(request.url).searchParams.get('parentId')
 
     const allowed = await isWorkspaceMemberOrOwner(id, userId)
     if (!allowed) return sendError('Accès refusé', 403)
 
-    const { data: tickets, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('tickets')
       .select(TICKET_SELECT)
       .eq('workspace_id', id)
       .order('order', { ascending: true })
 
+    if (parentId) {
+      query = query.eq('parent_id', parentId)
+    } else {
+      query = query.is('parent_id', null)
+    }
+
+    const { data: tickets, error } = await query
     if (error) return sendError('Erreur lors de la récupération des tickets', 500)
 
     return sendSuccess({ tickets: (tickets ?? []).map(mapTicket) })
@@ -77,7 +88,19 @@ export async function POST(request: NextRequest, { params }: Params) {
       return sendError(parsed.error.issues[0].message, 422)
     }
 
-    const { title, description, priority, type, assigneeId } = parsed.data
+    const { title, description, priority, type, assigneeId, parentId } = parsed.data
+
+    // Guard: prevent grandchildren (max one level of nesting)
+    if (parentId) {
+      const { data: parent } = await supabaseAdmin
+        .from('tickets')
+        .select('parent_id')
+        .eq('id', parentId)
+        .eq('workspace_id', id)
+        .single()
+      if (!parent) return sendError('Ticket parent introuvable', 404)
+      if (parent.parent_id) return sendError('Les sous-tickets ne peuvent pas avoir de sous-tickets', 422)
+    }
 
     // Get max order in the target column (backlog)
     const { data: maxRow } = await supabaseAdmin
@@ -102,6 +125,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         status: 'backlog',
         reporter_id: userId,
         assignee_id: assigneeId ?? null,
+        parent_id: parentId ?? null,
         order,
       })
       .select('id')

@@ -5,6 +5,7 @@ import { ticketsApi } from '@/lib/api'
 import type { CreateTicketDto, Ticket, TicketStatus, UpdateTicketDto } from '@/types'
 
 const ticketsKey = (workspaceId: string) => ['tickets', workspaceId]
+const childTicketsKey = (workspaceId: string, parentId: string) => ['tickets', workspaceId, 'children', parentId]
 
 export function useTickets(workspaceId: string) {
   return useQuery({
@@ -84,6 +85,29 @@ export function useUpdateTicket(workspaceId: string) {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ticketsKey(workspaceId) })
+    },
+  })
+}
+
+export function useChildTickets(workspaceId: string, parentId: string) {
+  return useQuery({
+    queryKey: childTicketsKey(workspaceId, parentId),
+    queryFn: () => ticketsApi.listChildren(workspaceId, parentId),
+    enabled: Boolean(workspaceId) && Boolean(parentId),
+  })
+}
+
+export function useCreateChildTicket(workspaceId: string, parentId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (title: string) =>
+      ticketsApi.create(workspaceId, { title, priority: 'medium', type: 'task', parentId }),
+    onSuccess: (newTicket) => {
+      queryClient.setQueryData<Ticket[]>(
+        childTicketsKey(workspaceId, parentId),
+        (prev) => (prev ? [...prev, newTicket] : [newTicket])
+      )
     },
   })
 }
