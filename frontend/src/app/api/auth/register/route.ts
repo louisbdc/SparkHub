@@ -3,6 +3,11 @@ import { z } from 'zod'
 import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSuccess, sendError } from '@/lib/api-utils'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+
+// 5 registrations per hour per IP
+const LIMIT = 5
+const WINDOW_MS = 60 * 60 * 1000
 
 const schema = z.object({
   name: z.string().min(1).max(100),
@@ -12,6 +17,11 @@ const schema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (!checkRateLimit(`register:${ip}`, LIMIT, WINDOW_MS)) {
+    return sendError('Trop de tentatives. Réessayez dans une heure.', 429)
+  }
+
   try {
     const body = await request.json()
     const parsed = schema.safeParse(body)

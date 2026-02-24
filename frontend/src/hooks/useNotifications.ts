@@ -9,8 +9,8 @@ export function useNotifications() {
     queryKey: ['notifications'],
     queryFn: notificationsApi.list,
     enabled: Boolean(getToken()),
-    refetchInterval: 5_000,
-    staleTime: 4_000,
+    refetchInterval: 30_000,
+    staleTime: 25_000,
     retry: false,
   })
 }

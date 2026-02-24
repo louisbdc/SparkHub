@@ -3,6 +3,11 @@ import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSuccess, sendError } from '@/lib/api-utils'
 import { mapProfile } from '@/lib/db-mappers'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+
+// 10 attempts per 15 minutes per IP
+const LIMIT = 10
+const WINDOW_MS = 15 * 60 * 1000
 
 const schema = z.object({
   email: z.string().email(),
@@ -10,6 +15,11 @@ const schema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (!checkRateLimit(`login:${ip}`, LIMIT, WINDOW_MS)) {
+    return sendError('Trop de tentatives. Réessayez dans 15 minutes.', 429)
+  }
+
   try {
     const body = await request.json()
     const parsed = schema.safeParse(body)
