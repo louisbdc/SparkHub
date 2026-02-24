@@ -1,11 +1,9 @@
 import type { NextConfig } from "next";
 
-// Backend server URL (socket.io + API proxy in prod, localhost:5000 in dev)
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000'
-
-// Derive ws:// / wss:// equivalents
-const apiWs = apiUrl.replace(/^http/, 'ws')
-
+// Note: CSP omitted intentionally — the app uses multiple dynamic origins
+// (socket.io backend, Supabase, emoji-mart CDN, Turbopack HMR) that make a
+// restrictive CSP fragile without a nonce/hash strategy. The headers below
+// cover the most impactful browser protections without breaking functionality.
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -15,18 +13,6 @@ const securityHeaders = [
   {
     key: 'Strict-Transport-Security',
     value: 'max-age=63072000; includeSubDomains; preload',
-  },
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https:",
-      "font-src 'self'",
-      `connect-src 'self' ${apiUrl} ${apiWs} https://*.supabase.co wss://*.supabase.co`,
-      "frame-ancestors 'none'",
-    ].join('; '),
   },
 ]
 
