@@ -1,7 +1,11 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ImageIcon, Loader2, Reply, Smile, X } from 'lucide-react'
+import { ImageIcon, Loader2, Reply, Send, Smile, X } from 'lucide-react'
+import data from '@emoji-mart/data'
+
+const EmojiPicker = dynamic(() => import('@emoji-mart/react'), { ssr: false })
 import { ChatBubble, TypingIndicator } from '@/components/ui/ChatBubble'
 import {
   useCreateMessage,
@@ -25,8 +29,12 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
   const [pendingImages, setPendingImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
 
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
   const typingStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isTypingRef = useRef(false)
 
@@ -85,6 +93,36 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
     URL.revokeObjectURL(imagePreviews[index])
     setPendingImages((prev) => prev.filter((_, i) => i !== index))
     setImagePreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // Close emoji picker on outside click
+  useEffect(() => {
+    if (!showEmojiPicker) return
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [showEmojiPicker])
+
+  const handleEmojiSelect = (emoji: { native: string }) => {
+    const input = inputRef.current
+    const native = emoji.native
+    if (!input) {
+      setContent((prev) => prev + native)
+    } else {
+      const start = input.selectionStart ?? content.length
+      const end = input.selectionEnd ?? content.length
+      setContent(content.slice(0, start) + native + content.slice(end))
+      // Restore cursor after React re-render
+      requestAnimationFrame(() => {
+        input.focus()
+        input.setSelectionRange(start + native.length, start + native.length)
+      })
+    }
+    setShowEmojiPicker(false)
   }
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -252,10 +290,35 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
         )}
 
         {/* Input bar */}
-        <div className="flex items-center gap-3 rounded-full border bg-muted/40 px-4 h-12">
-          <Smile className="w-5 h-5 shrink-0 text-muted-foreground" />
+        <div className="relative flex items-center gap-3 rounded-full border bg-muted/40 px-4 h-12">
+          {/* Emoji picker popup */}
+          {showEmojiPicker && (
+            <div
+              ref={emojiPickerRef}
+              className="absolute bottom-14 left-0 z-50"
+            >
+              <EmojiPicker
+                data={data}
+                onEmojiSelect={handleEmojiSelect}
+                locale="fr"
+                previewPosition="none"
+                skinTonePosition="none"
+              />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker((v) => !v)}
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            tabIndex={-1}
+            title="Emoji"
+          >
+            <Smile className="w-5 h-5" />
+          </button>
 
           <input
+            ref={inputRef}
             type="text"
             placeholder="Votre message..."
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -288,8 +351,9 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
               onClick={handleSend}
               disabled={!canSend}
               className="p-1.5 rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+              title="Envoyer"
             >
-              <Smile className="w-5 h-5" />
+              <Send className="w-5 h-5" />
             </button>
           </div>
         </div>
