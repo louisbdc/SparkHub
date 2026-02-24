@@ -249,7 +249,7 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
         <Button type="button" variant="outline" onClick={() => { reset(); setFiles([]) }}>
           Réinitialiser
         </Button>
-        <Button type="submit" disabled={createTicket.isPending}>
+        <Button type="submit" disabled={createTicket.isPending || assigneeValue === 'none'}>
           {createTicket.isPending && (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           )}
