@@ -44,8 +44,14 @@ export async function POST(request: NextRequest, { params }: Params) {
       }
       const { error } = await supabaseAdmin
         .from('workspace_members')
-        .upsert({ workspace_id: id, user_id: profile.id, role })
-      if (error) return sendError('Invitation échouée', 500)
+        .upsert(
+          { workspace_id: id, user_id: profile.id, role },
+          { onConflict: 'workspace_id,user_id' }
+        )
+      if (error) {
+        console.error('[invite] upsert error:', error)
+        return sendError('Invitation échouée', 500)
+      }
 
       const updated = await fetchWorkspace(id)
       return sendSuccess({
@@ -65,7 +71,13 @@ export async function POST(request: NextRequest, { params }: Params) {
       redirectTo: `${appUrl}/invite/accept`,
     })
 
-    if (inviteError) return sendError("Échec de l'envoi de l'invitation : " + inviteError.message, 500)
+    if (inviteError) {
+      console.error('[invite] inviteUserByEmail error:', inviteError)
+      const msg = inviteError.message.toLowerCase().includes('already')
+        ? 'Cet utilisateur a déjà un compte. Demandez-lui de se connecter.'
+        : "Échec de l'envoi de l'invitation : " + inviteError.message
+      return sendError(msg, 500)
+    }
 
     return sendSuccess({
       workspace,
