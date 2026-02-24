@@ -57,13 +57,15 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
     ...(workspace?.members.map((m) => m.user) ?? []),
   ].filter((u, i, arr) => arr.findIndex((x) => x._id === u._id) === i)
 
-  const defaultDev = members.find((m) => m.role === 'dev' || m.role === 'admin')
+  const devMembers = members.filter((m) => m.role === 'dev' || m.role === 'admin')
+  const soloDefault = devMembers.length === 1 ? devMembers[0] : null
+
+  const [assigneeValue, setAssigneeValue] = useState<string>('none')
 
   const {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
     reset,
   } = useForm<FormValues>({
@@ -72,10 +74,11 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
   })
 
   useEffect(() => {
-    if (defaultDev) {
-      setValue('assigneeId', defaultDev._id)
+    if (soloDefault) {
+      setAssigneeValue(soloDefault._id)
+      setValue('assigneeId', soloDefault._id)
     }
-  }, [defaultDev?._id])
+  }, [soloDefault?._id])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? [])
@@ -94,6 +97,8 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
         onSuccess: () => {
           reset()
           setFiles([])
+          setAssigneeValue(soloDefault?._id ?? 'none')
+          setValue('assigneeId', soloDefault?._id)
           onSuccess()
         },
       }
@@ -175,8 +180,11 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
         <div className="space-y-2">
           <Label>Assigné à</Label>
           <Select
-            value={watch('assigneeId') ?? 'none'}
-            onValueChange={(v) => setValue('assigneeId', v === 'none' ? undefined : v)}
+            value={assigneeValue}
+            onValueChange={(v) => {
+              setAssigneeValue(v)
+              setValue('assigneeId', v === 'none' ? undefined : v)
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Non assigné" />
