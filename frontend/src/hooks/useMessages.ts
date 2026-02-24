@@ -19,11 +19,27 @@ export function useCreateMessage(workspaceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (content: string) => messagesApi.create(workspaceId, content),
+    mutationFn: (payload: { content: string; replyTo?: string; images?: File[] }) =>
+      messagesApi.create(workspaceId, payload),
     onSuccess: (newMessage) => {
       queryClient.setQueryData<Message[]>(
         messagesKey(workspaceId),
         (prev) => (prev ? [...prev, newMessage] : [newMessage])
+      )
+    },
+  })
+}
+
+export function useEditMessage(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ messageId, content }: { messageId: string; content: string }) =>
+      messagesApi.update(workspaceId, messageId, content),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Message[]>(
+        messagesKey(workspaceId),
+        (prev) => prev?.map((m) => (m._id === updated._id ? updated : m)) ?? []
       )
     },
   })

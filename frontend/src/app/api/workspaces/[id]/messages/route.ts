@@ -9,19 +9,20 @@ import { uploadFile } from '@/lib/file-upload'
 
 type Params = { params: Promise<{ id: string }> }
 
-// Joins: author, replied-to message + its author, images
+// Base select without self-referential join (handled manually below)
 const MESSAGE_SELECT = `
   *,
   author:profiles!messages_author_id_fkey(*),
-  reply_to_message:messages!messages_reply_to_fkey(
-    id, content,
-    author:profiles!messages_author_id_fkey(id, name)
-  ),
   images:message_images(id, mime_type, originalname, size)
 `
 
+const REPLY_SELECT = `
+  id, content,
+  author:profiles!messages_author_id_fkey(id, name)
+`
+
 const createSchema = z.object({
-  content: z.string().min(1).max(4000),
+  content: z.string().max(4000),
   replyTo: z.string().uuid().optional(),
 })
 
@@ -34,17 +35,43 @@ export async function GET(request: NextRequest, { params }: Params) {
     const allowed = await isWorkspaceMemberOrOwner(id, userId)
     if (!allowed) return sendError('Accès refusé', 403)
 
-    const { data: messages, error } = await supabaseAdmin
+    const { data: rows, error } = await supabaseAdmin
       .from('messages')
       .select(MESSAGE_SELECT)
       .eq('workspace_id', id)
       .order('created_at', { ascending: true })
 
-    if (error) return sendError('Erreur lors de la récupération des messages', 500)
+    if (error) {
+      console.error('[messages GET]', error)
+      return sendError('Erreur lors de la récupération des messages', 500)
+    }
 
-    return sendSuccess({ messages: (messages ?? []).map(mapMessage) })
+    const messages = rows ?? []
+
+    // Resolve reply_to separately to avoid self-referential FK hint issues
+    const replyIds = [...new Set(messages.map((m) => m.reply_to).filter(Boolean))]
+    const replyMap: Record<string, unknown> = {}
+
+    if (replyIds.length > 0) {
+      const { data: replies } = await supabaseAdmin
+        .from('messages')
+        .select(REPLY_SELECT)
+        .in('id', replyIds)
+
+      for (const r of replies ?? []) {
+        replyMap[r.id] = r
+      }
+    }
+
+    const enriched = messages.map((m) => ({
+      ...m,
+      reply_to_message: m.reply_to ? (replyMap[m.reply_to] ?? null) : null,
+    }))
+
+    return sendSuccess({ messages: enriched.map(mapMessage) })
   } catch (e) {
     if (e instanceof Response) return e
+    console.error('[messages GET catch]', e)
     return sendError('Erreur serveur', 500)
   }
 }
@@ -127,7 +154,17 @@ export async function POST(request: NextRequest, { params }: Params) {
       .eq('id', created.id)
       .single()
 
-    return sendSuccess({ message: mapMessage(message) }, 201)
+    let replyMessage = null
+    if (replyTo) {
+      const { data: reply } = await supabaseAdmin
+        .from('messages')
+        .select(REPLY_SELECT)
+        .eq('id', replyTo)
+        .single()
+      replyMessage = reply ?? null
+    }
+
+    return sendSuccess({ message: mapMessage({ ...message, reply_to_message: replyMessage }) }, 201)
   } catch (e) {
     if (e instanceof Response) return e
     return sendError('Erreur serveur', 500)
