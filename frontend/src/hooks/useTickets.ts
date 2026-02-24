@@ -112,6 +112,21 @@ export function useCreateChildTicket(workspaceId: string, parentId: string) {
   })
 }
 
+export function useEditTicket(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ ticketId, payload }: { ticketId: string; payload: UpdateTicketDto }) =>
+      ticketsApi.update(workspaceId, ticketId, payload),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Ticket[]>(
+        ticketsKey(workspaceId),
+        (prev) => prev?.map((t) => (t._id === updated._id ? updated : t)) ?? []
+      )
+    },
+  })
+}
+
 export function useDeleteTicket(workspaceId: string) {
   const queryClient = useQueryClient()
 

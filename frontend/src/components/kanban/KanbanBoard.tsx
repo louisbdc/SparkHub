@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 import { KanbanColumn } from './KanbanColumn'
+import { KanbanFilters, DEFAULT_KANBAN_FILTERS, type KanbanFiltersState } from './KanbanFilters'
 import { TicketCard } from './TicketCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -21,6 +22,7 @@ import {
   useUpdateTicket,
   useDeleteTicket,
 } from '@/hooks/useTickets'
+import { useWorkspace } from '@/hooks/useWorkspaces'
 import type { Ticket, TicketStatus } from '@/types'
 import { TICKET_STATUS_LABELS, TICKET_STATUSES } from '@/types'
 
@@ -31,8 +33,16 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({ workspaceId, onTicketClick }: KanbanBoardProps) {
   const { data: tickets = [], isLoading } = useTickets(workspaceId)
+  const { data: workspace } = useWorkspace(workspaceId)
   const updateTicket = useUpdateTicket(workspaceId)
   const deleteTicket = useDeleteTicket(workspaceId)
+
+  const [filters, setFilters] = useState<KanbanFiltersState>(DEFAULT_KANBAN_FILTERS)
+
+  const members = [
+    ...(workspace?.owner ? [workspace.owner] : []),
+    ...(workspace?.members.map((m) => m.user) ?? []),
+  ].filter((u, i, arr) => arr.findIndex((x) => x._id === u._id) === i)
 
   // Local copy so we can update order synchronously on drop (no snap-back)
   const [items, setItems] = useState<Ticket[]>(tickets)
@@ -57,7 +67,16 @@ export function KanbanBoard({ workspaceId, onTicketClick }: KanbanBoardProps) {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
-  const grouped = groupTicketsByStatus(items)
+  // Client-side filtering — DnD still operates on all `items`
+  const filteredItems = items.filter((t) => {
+    if (filters.search && !t.title.toLowerCase().includes(filters.search.toLowerCase())) return false
+    if (filters.priorities.length && !filters.priorities.includes(t.priority)) return false
+    if (filters.types.length && !filters.types.includes(t.type)) return false
+    if (filters.assigneeId && t.assignee?._id !== filters.assigneeId) return false
+    return true
+  })
+
+  const grouped = groupTicketsByStatus(filteredItems)
 
   const handleDragStart = useCallback(
     ({ active }: DragStartEvent) => {
@@ -133,7 +152,7 @@ export function KanbanBoard({ workspaceId, onTicketClick }: KanbanBoardProps) {
   )
 
   return (
-    <div className="relative h-full overflow-hidden">
+    <div className="relative flex flex-col h-full overflow-hidden">
       {/* Skeleton overlay — CSS crossfade, no timing hacks needed */}
       <div
         className={cn(
@@ -169,16 +188,22 @@ export function KanbanBoard({ workspaceId, onTicketClick }: KanbanBoardProps) {
       {/* Real content — always rendered, fades in as skeleton fades out */}
       <div
         className={cn(
-          'h-full transition-opacity duration-200',
+          'flex flex-col h-full transition-opacity duration-200',
           isLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'
         )}
       >
+        <KanbanFilters
+          filters={filters}
+          onChange={setFilters}
+          workspaceMembers={members}
+        />
+
         <DndContext
           sensors={sensors}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 p-4 sm:p-6 overflow-x-auto h-full snap-x snap-mandatory">
+          <div className="flex gap-4 p-4 sm:p-6 overflow-x-auto flex-1 snap-x snap-mandatory">
             {TICKET_STATUSES.map((status) => (
               <KanbanColumn
                 key={status}
