@@ -436,11 +436,16 @@ export const messagesApi = {
     return data.data!.message
   },
 
+  // Uses fetch with a relative URL to always hit the local Next.js API
+  // (regardless of NEXT_PUBLIC_API_URL pointing to an external backend)
   getImageUrl: async (imageId: string): Promise<{ url: string; mimeType: string; originalname: string }> => {
-    const { data } = await apiClient.get<ApiResponse<{ url: string; mimeType: string; originalname: string }>>(
-      `/messages/images/${imageId}?json=1`
-    )
-    return data.data!
+    const token = Cookies.get(TOKEN_KEY)
+    const res = await fetch(`/api/messages/images/${imageId}?json=1`, {
+      headers: { Authorization: `Bearer ${token ?? ''}` },
+    })
+    if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`)
+    const json = await res.json() as ApiResponse<{ url: string; mimeType: string; originalname: string }>
+    return json.data!
   },
 
   getById: async (workspaceId: string, messageId: string): Promise<Message> => {

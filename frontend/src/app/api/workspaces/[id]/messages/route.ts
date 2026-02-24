@@ -4,16 +4,15 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAuth } from '@/lib/auth-guard'
 import { sendSuccess, sendError } from '@/lib/api-utils'
 import { isWorkspaceMemberOrOwner } from '@/lib/workspace-queries'
-import { mapMessage } from '@/lib/db-mappers'
-import { uploadFile } from '@/lib/file-upload'
+import { mapMessage, type DbMessage } from '@/lib/db-mappers'
+import { uploadFile, createSignedUrl } from '@/lib/file-upload'
 
 type Params = { params: Promise<{ id: string }> }
 
-// Base select without self-referential join (handled manually below)
 const MESSAGE_SELECT = `
   *,
   author:profiles!messages_author_id_fkey(*),
-  images:message_images(id, mime_type, originalname, size)
+  images:message_images(id, mime_type, originalname, size, storage_key)
 `
 
 const REPLY_SELECT = `
@@ -25,6 +24,29 @@ const createSchema = z.object({
   content: z.string().max(4000),
   replyTo: z.string().uuid().optional(),
 })
+
+/** Attach signed URLs to all images inside a list of raw message rows. */
+async function withSignedImageUrls(messages: DbMessage[]): Promise<DbMessage[]> {
+  const allImages = messages.flatMap((m) => m.images ?? [])
+  if (allImages.length === 0) return messages
+
+  const urlMap = new Map<string, string>()
+  await Promise.all(
+    allImages.map(async (img) => {
+      try {
+        const url = await createSignedUrl(img.storage_key, 3600)
+        urlMap.set(img.id, url)
+      } catch {
+        // Non-fatal: image just won't display
+      }
+    })
+  )
+
+  return messages.map((m) => ({
+    ...m,
+    images: (m.images ?? []).map((img) => ({ ...img, url: urlMap.get(img.id) })),
+  }))
+}
 
 // GET /api/workspaces/:id/messages
 export async function GET(request: NextRequest, { params }: Params) {
@@ -63,10 +85,12 @@ export async function GET(request: NextRequest, { params }: Params) {
       }
     }
 
-    const enriched = messages.map((m) => ({
+    const withReplies = messages.map((m) => ({
       ...m,
       reply_to_message: m.reply_to ? (replyMap[m.reply_to] ?? null) : null,
-    }))
+    })) as DbMessage[]
+
+    const enriched = await withSignedImageUrls(withReplies)
 
     return sendSuccess({ messages: enriched.map(mapMessage) })
   } catch (e) {
@@ -77,7 +101,6 @@ export async function GET(request: NextRequest, { params }: Params) {
 }
 
 // POST /api/workspaces/:id/messages
-// Accepts JSON { content, replyTo? } or FormData { content, replyTo?, images[] }
 export async function POST(request: NextRequest, { params }: Params) {
   try {
     const { userId } = await requireAuth(request)
@@ -86,7 +109,6 @@ export async function POST(request: NextRequest, { params }: Params) {
     const allowed = await isWorkspaceMemberOrOwner(id, userId)
     if (!allowed) return sendError('Accès refusé', 403)
 
-    // Parse body — JSON or multipart
     const contentType = request.headers.get('content-type') ?? ''
     let rawContent: string
     let rawReplyTo: string | undefined
@@ -108,10 +130,8 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const { content, replyTo } = parsed.data
 
-    // Upload images (if any) — Supabase Storage
     const uploadedImages = await Promise.all(imageFiles.map(uploadFile))
 
-    // Insert message
     const { data: created, error: insertError } = await supabaseAdmin
       .from('messages')
       .insert({
@@ -125,7 +145,6 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     if (insertError || !created) return sendError('Envoi du message échoué', 500)
 
-    // Insert image records
     if (uploadedImages.length > 0) {
       const imageRows = uploadedImages.map((img) => ({
         message_id: created.id,
@@ -136,19 +155,15 @@ export async function POST(request: NextRequest, { params }: Params) {
         size: img.size,
       }))
 
-      const { error: imgError } = await supabaseAdmin
-        .from('message_images')
-        .insert(imageRows)
+      const { error: imgError } = await supabaseAdmin.from('message_images').insert(imageRows)
 
       if (imgError) {
-        // Rollback message on image insert failure
         await supabaseAdmin.from('messages').delete().eq('id', created.id)
         return sendError('Envoi des images échoué', 500)
       }
     }
 
-    // Fetch the full message with joins for the response
-    const { data: message } = await supabaseAdmin
+    const { data: rawMessage } = await supabaseAdmin
       .from('messages')
       .select(MESSAGE_SELECT)
       .eq('id', created.id)
@@ -164,7 +179,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       replyMessage = reply ?? null
     }
 
-    return sendSuccess({ message: mapMessage({ ...message, reply_to_message: replyMessage }) }, 201)
+    const withReply = { ...rawMessage, reply_to_message: replyMessage } as DbMessage
+    const [enriched] = await withSignedImageUrls([withReply])
+
+    return sendSuccess({ message: mapMessage(enriched) }, 201)
   } catch (e) {
     if (e instanceof Response) return e
     return sendError('Erreur serveur', 500)

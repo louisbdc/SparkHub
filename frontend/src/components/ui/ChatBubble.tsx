@@ -6,6 +6,7 @@ import { fr } from 'date-fns/locale'
 import { Check, Pencil, Reply, Trash2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { MessageImageItem } from '@/components/ui/MessageImageItem'
 import type { MessageImage, MessageReply } from '@/types'
 
 interface ChatBubbleProps {
@@ -115,12 +116,11 @@ export function ChatBubble({
             {images.length > 0 && (
               <div className={cn('flex flex-wrap gap-1.5', content ? 'mb-2' : '')}>
                 {images.map((img) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <MessageImageItem
                     key={img._id}
-                    src={`/api/messages/images/${img._id}`}
-                    alt={img.originalname}
-                    className="max-w-[200px] max-h-[200px] rounded-lg object-cover cursor-pointer"
+                    imageId={img._id}
+                    originalname={img.originalname}
+                    preloadedUrl={img.url}
                   />
                 ))}
               </div>

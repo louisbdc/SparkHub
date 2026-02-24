@@ -59,6 +59,7 @@ export interface MessageImage {
   mimeType: string
   originalname: string
   size: number
+  url?: string
 }
 
 export interface MessageReply {

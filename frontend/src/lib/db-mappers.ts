@@ -94,6 +94,8 @@ export interface DbMessageImage {
   mime_type: string
   originalname: string
   size: number
+  storage_key: string
+  url?: string
 }
 
 export interface DbReplyMessage {
@@ -201,6 +203,7 @@ function mapMessageImage(row: DbMessageImage): MessageImage {
     mimeType: row.mime_type,
     originalname: row.originalname,
     size: row.size,
+    url: row.url,
   }
 }
 
