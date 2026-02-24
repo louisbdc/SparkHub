@@ -133,7 +133,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     if (fetchError || !ticket) return sendError('Ticket créé mais récupération échouée', 500)
 
-    const workspaceLink = `/workspaces/${id}/kanban`
+    const ticketLink = `/workspaces/${id}/kanban?ticket=${created.id}`
 
     // Notify all workspace members except the creator
     const { data: members } = await supabaseAdmin
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest, { params }: Params) {
             'ticket_created',
             'Nouveau ticket',
             `"${title}" a été créé dans le workspace`,
-            workspaceLink
+            ticketLink
           )
         )
       )
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         'ticket_assigned',
         'Ticket assigné',
         `Vous avez été assigné au ticket "${title}"`,
-        workspaceLink
+        ticketLink
       )
     }
 

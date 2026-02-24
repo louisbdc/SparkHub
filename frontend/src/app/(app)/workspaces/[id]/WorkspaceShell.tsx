@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useParams, usePathname } from 'next/navigation'
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, FolderOpen, LayoutGrid, MessageSquare, Plus, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TicketDetailPanel } from '@/components/ticket/TicketDetailPanel'
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog'
 import { WorkspaceProvider, useWorkspaceContext } from './WorkspaceContext'
 import { NotificationBell } from '@/components/layout/NotificationBell'
+import { ticketsApi } from '@/lib/api'
 
 const NAV_ITEMS = [
   { segment: 'kanban', icon: LayoutGrid, label: 'Kanban' },
@@ -30,10 +31,24 @@ const NAV_ITEMS = [
 function Shell({ children }: { children: React.ReactNode }) {
   const { id } = useParams<{ id: string }>()
   const pathname = usePathname()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: workspace } = useWorkspace(id)
   const { data: user } = useCurrentUser()
   const [createOpen, setCreateOpen] = useState(false)
   const { selectedTicket, setSelectedTicket } = useWorkspaceContext()
+
+  // Open ticket panel when navigating from a notification (?ticket=xxx)
+  const ticketIdParam = searchParams.get('ticket')
+  useEffect(() => {
+    if (!ticketIdParam) return
+    ticketsApi.getById(id, ticketIdParam).then((ticket) => {
+      setSelectedTicket(ticket)
+      const url = new URL(window.location.href)
+      url.searchParams.delete('ticket')
+      router.replace(url.pathname + url.search)
+    }).catch(() => {})
+  }, [ticketIdParam])
 
   return (
     <div className="flex flex-col h-full">

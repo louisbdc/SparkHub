@@ -133,7 +133,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         'ticket_assigned',
         'Ticket assigné',
         `Vous avez été assigné au ticket "${existing.title}"`,
-        `/workspaces/${id}/kanban`
+        `/workspaces/${id}/kanban?ticket=${ticketId}`
       )
     }
 

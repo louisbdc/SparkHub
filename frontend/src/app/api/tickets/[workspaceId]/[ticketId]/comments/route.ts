@@ -76,7 +76,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       .single()
 
     if (ticket) {
-      const workspaceLink = `/workspaces/${workspaceId}/kanban`
+      const workspaceLink = `/workspaces/${workspaceId}/kanban?ticket=${ticketId}`
       const notifBody = `Nouveau commentaire sur le ticket "${ticket.title}"`
       const recipients = new Set<string>()
       if (ticket.reporter_id !== userId) recipients.add(ticket.reporter_id)

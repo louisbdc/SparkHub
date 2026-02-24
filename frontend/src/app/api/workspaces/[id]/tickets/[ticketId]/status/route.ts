@@ -56,7 +56,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     // Notify reporter and assignee of the status change (excluding the updater)
     if (parsed.data.status) {
-      const workspaceLink = `/workspaces/${id}/kanban`
+      const workspaceLink = `/workspaces/${id}/kanban?ticket=${ticketId}`
       const notifBody = `Statut du ticket "${ticket?.title}" changé en "${parsed.data.status}"`
       const recipients = new Set<string>()
       if (ticket?.reporter_id && ticket.reporter_id !== userId) recipients.add(ticket.reporter_id)
