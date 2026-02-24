@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import {
   DndContext,
@@ -78,6 +78,20 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
   })
 
   const grouped = groupTicketsByStatus(filteredItems)
+
+  // Map parentId → { total, done } for child progress indicators on cards
+  const childInfoMap = useMemo(() => {
+    const map = new Map<string, { total: number; done: number }>()
+    for (const t of items) {
+      if (!t.parentId) continue
+      const prev = map.get(t.parentId) ?? { total: 0, done: 0 }
+      map.set(t.parentId, {
+        total: prev.total + 1,
+        done: prev.done + (t.status === 'done' ? 1 : 0),
+      })
+    }
+    return map
+  }, [items])
 
   const handleDragStart = useCallback(
     ({ active }: DragStartEvent) => {
@@ -214,6 +228,7 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
                 onTicketClick={onTicketClick}
                 onTicketEdit={onTicketEdit}
                 onTicketDelete={(ticketId) => deleteTicket.mutate(ticketId)}
+                childInfoMap={childInfoMap}
               />
             ))}
           </div>
@@ -221,7 +236,13 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
           <DragOverlay>
             {activeTicket && (
               <div className="rotate-2 shadow-xl opacity-90">
-                <TicketCard ticket={activeTicket} onClick={() => {}} onDelete={() => {}} />
+                <TicketCard
+                  ticket={activeTicket}
+                  onClick={() => {}}
+                  onDelete={() => {}}
+                  childCount={childInfoMap.get(activeTicket._id)?.total}
+                  doneChildCount={childInfoMap.get(activeTicket._id)?.done}
+                />
               </div>
             )}
           </DragOverlay>

@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
+import { GitBranch, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -35,9 +35,13 @@ interface TicketCardProps {
   onClick: (ticket: Ticket) => void
   onEdit?: (ticket: Ticket) => void
   onDelete: (ticketId: string) => void
+  /** Number of child tickets (for parent cards) */
+  childCount?: number
+  /** Number of done child tickets */
+  doneChildCount?: number
 }
 
-export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProps) {
+export function TicketCard({ ticket, onClick, onEdit, onDelete, childCount, doneChildCount }: TicketCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: ticket._id })
   const skipClick = useRef(false)
@@ -46,6 +50,11 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
     transform: CSS.Transform.toString(transform),
     transition,
   }
+
+  const hasChildren = (childCount ?? 0) > 0
+  const childProgress = hasChildren
+    ? Math.round(((doneChildCount ?? 0) / (childCount ?? 1)) * 100)
+    : 0
 
   return (
     <div
@@ -56,6 +65,7 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
       className={cn(
         'group relative bg-card border rounded-lg p-3 cursor-pointer select-none',
         'hover:shadow-sm hover:border-primary/30 transition-all',
+        ticket.parentId && 'border-l-2 border-l-primary/40',
         isDragging && 'opacity-50 shadow-lg border-primary/50 rotate-1'
       )}
       onClick={() => {
@@ -105,6 +115,14 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Sub-ticket label */}
+      {ticket.parentId && (
+        <div className="flex items-center gap-1 mb-1.5">
+          <GitBranch className="w-3 h-3 text-primary/50 shrink-0" />
+          <span className="text-[10px] text-primary/60 font-medium">sous-ticket</span>
+        </div>
+      )}
+
       {/* Type icon + title */}
       <div className="flex items-start gap-2 pr-5">
         <span className="text-sm mt-0.5 shrink-0">{TYPE_ICON[ticket.type]}</span>
@@ -129,6 +147,21 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
           </Avatar>
         )}
       </div>
+
+      {/* Sub-tickets progress (parent cards only) */}
+      {hasChildren && (
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-emerald-500 rounded-full transition-all"
+              style={{ width: `${childProgress}%` }}
+            />
+          </div>
+          <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
+            {doneChildCount}/{childCount}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
