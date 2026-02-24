@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator'
 import { ChatBubble, TypingIndicator } from '@/components/ui/ChatBubble'
 import { useComments, useCreateComment, useDeleteComment } from '@/hooks/useComments'
 import { useCurrentUser } from '@/hooks/useAuth'
-import { useAddAttachments, useTickets } from '@/hooks/useTickets'
+import { useAddAttachments, useChildTickets, useTickets } from '@/hooks/useTickets'
 import { useWorkspace } from '@/hooks/useWorkspaces'
 import { useTicketSocket } from '@/hooks/useTicketSocket'
 import { filesApi } from '@/lib/api'
@@ -55,7 +55,10 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
   const { data: currentUser } = useCurrentUser()
   const { data: tickets } = useTickets(workspaceId)
   const { data: workspace } = useWorkspace(workspaceId)
-  const liveTicket = (ticket && tickets?.find((t) => t._id === ticket._id)) ?? ticket
+  // For sub-tickets, useTickets doesn't include them — look them up in the child cache instead
+  const { data: siblings } = useChildTickets(workspaceId, ticket?.parentId ?? '')
+  const liveTicket =
+    (ticket && (tickets?.find((t) => t._id === ticket._id) ?? siblings?.find((t) => t._id === ticket._id))) ?? ticket
   const parentTicket = liveTicket?.parentId ? (tickets?.find((t) => t._id === liveTicket.parentId) ?? null) : null
 
   const members = [
@@ -151,7 +154,7 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
                 </button>
               )}
               <div className="flex items-start gap-2">
-                <SheetTitle className="flex-1 text-base font-semibold leading-snug pr-2">
+                <SheetTitle className="flex-1 text-base font-semibold leading-snug">
                   {liveTicket.title}
                 </SheetTitle>
               </div>
@@ -280,6 +283,7 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
                       <SubTicketsList
                         workspaceId={workspaceId}
                         parentId={liveTicket._id}
+                        members={members}
                         onTicketClick={onTicketChange}
                       />
                     </>

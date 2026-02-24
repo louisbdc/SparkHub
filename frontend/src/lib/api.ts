@@ -38,6 +38,16 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password']
+
+function redirectToLogin() {
+  if (typeof window === 'undefined') return
+  const current = window.location.pathname
+  if (!PUBLIC_PATHS.some((p) => current === p || current.startsWith(p + '/'))) {
+    window.location.href = '/login'
+  }
+}
+
 // Normalize error shape — attempt token refresh on 401 before redirecting
 let isRefreshing = false
 let pendingRequests: Array<(token: string) => void> = []
@@ -86,13 +96,13 @@ apiClient.interceptors.response.use(
           pendingRequests = []
           Cookies.remove(TOKEN_KEY)
           Cookies.remove(REFRESH_TOKEN_KEY)
-          if (typeof window !== 'undefined') window.location.href = '/login'
+          redirectToLogin()
         } finally {
           isRefreshing = false
         }
       } else {
         Cookies.remove(TOKEN_KEY)
-        if (typeof window !== 'undefined') window.location.href = '/login'
+        redirectToLogin()
       }
     }
 

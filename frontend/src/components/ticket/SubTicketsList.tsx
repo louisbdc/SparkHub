@@ -4,8 +4,23 @@ import { useState } from 'react'
 import { Check, ChevronRight, Loader2, Plus } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
-import { useChildTickets, useCreateChildTicket } from '@/hooks/useTickets'
-import type { Ticket, TicketPriority, TicketStatus } from '@/types'
+import { useChildTickets, useCreateChildTicket, useToggleChildDone } from '@/hooks/useTickets'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  TICKET_PRIORITY_LABELS,
+  TICKET_TYPE_LABELS,
+  type Ticket,
+  type TicketPriority,
+  type TicketStatus,
+  type TicketType,
+} from '@/types'
+import type { User } from '@/types'
 
 const STATUS_CIRCLE: Record<TicketStatus, string> = {
   backlog:     'border-slate-300 dark:border-slate-600',
@@ -15,45 +30,55 @@ const STATUS_CIRCLE: Record<TicketStatus, string> = {
   done:        'border-emerald-500 bg-emerald-500',
 }
 
-const PRIORITY_DOT: Record<TicketPriority, string> = {
-  low:    'bg-slate-400',
-  medium: 'bg-blue-400',
-  high:   'bg-orange-400',
-  urgent: 'bg-red-500',
-}
+const PRIORITIES: TicketPriority[] = ['low', 'medium', 'high', 'urgent']
+const TYPES: TicketType[] = ['task', 'bug', 'feature', 'improvement']
 
 interface SubTicketsListProps {
   workspaceId: string
   parentId: string
+  members?: User[]
   onTicketClick: (ticket: Ticket) => void
 }
 
-export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTicketsListProps) {
+export function SubTicketsList({ workspaceId, parentId, members = [], onTicketClick }: SubTicketsListProps) {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState<TicketPriority>('medium')
+  const [type, setType] = useState<TicketType>('task')
+  const [assigneeId, setAssigneeId] = useState<string>('none')
 
   const { data: children = [], isLoading } = useChildTickets(workspaceId, parentId)
   const createChild = useCreateChildTicket(workspaceId, parentId)
+  const toggleDone = useToggleChildDone(workspaceId, parentId)
 
   const total = children.length
   const doneCount = children.filter((c) => c.status === 'done').length
   const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0
 
+  const resetForm = () => {
+    setTitle('')
+    setDescription('')
+    setPriority('medium')
+    setType('task')
+    setAssigneeId('none')
+    setShowForm(false)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = title.trim()
     if (!trimmed) return
-    createChild.mutate(trimmed, {
-      onSuccess: () => {
-        setTitle('')
-        setShowForm(false)
+    createChild.mutate(
+      {
+        title: trimmed,
+        description: description.trim() || undefined,
+        priority,
+        type,
+        assigneeId: assigneeId !== 'none' ? assigneeId : undefined,
       },
-    })
-  }
-
-  const handleCancel = () => {
-    setShowForm(false)
-    setTitle('')
+      { onSuccess: resetForm }
+    )
   }
 
   return (
@@ -90,42 +115,45 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
         <ul className="flex flex-col gap-0.5">
           {children.map((child) => (
             <li key={child._id}>
-              <button
-                type="button"
-                onClick={() => onTicketClick(child)}
-                className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-muted/60 transition-colors group text-left"
-              >
-                <div
+              <div className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-muted/60 transition-colors group">
+                <button
+                  type="button"
+                  onClick={() => toggleDone.mutate({ ticketId: child._id, isDone: child.status !== 'done' })}
                   className={cn(
-                    'w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors',
+                    'w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all hover:scale-110',
                     STATUS_CIRCLE[child.status]
                   )}
                 >
                   {child.status === 'done' && (
                     <Check className="w-2 h-2 text-white" strokeWidth={3} />
                   )}
-                </div>
-                <div className={cn('w-1.5 h-1.5 rounded-full shrink-0', PRIORITY_DOT[child.priority])} />
-                <span
-                  className={cn(
-                    'text-xs flex-1 truncate transition-colors group-hover:text-foreground',
-                    child.status === 'done'
-                      ? 'line-through text-muted-foreground'
-                      : 'text-foreground/80'
-                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onTicketClick(child)}
+                  className="flex-1 flex items-center gap-2.5 min-w-0 text-left"
                 >
-                  {child.title}
-                </span>
-                {child.assignee && (
-                  <Avatar className="w-4 h-4 shrink-0" title={child.assignee.name}>
-                    <AvatarImage src={child.assignee.avatar ?? undefined} />
-                    <AvatarFallback className="text-[8px] font-semibold">
-                      {(child.assignee.name[0] ?? '?').toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
-              </button>
+                  <span
+                    className={cn(
+                      'text-xs flex-1 truncate transition-colors group-hover:text-foreground',
+                      child.status === 'done'
+                        ? 'line-through text-muted-foreground'
+                        : 'text-foreground/80'
+                    )}
+                  >
+                    {child.title}
+                  </span>
+                  {child.assignee && (
+                    <Avatar className="w-4 h-4 shrink-0" title={child.assignee.name}>
+                      <AvatarImage src={child.assignee.avatar ?? undefined} />
+                      <AvatarFallback className="text-[8px] font-semibold">
+                        {(child.assignee.name[0] ?? '?').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -141,6 +169,7 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
           onSubmit={handleSubmit}
           className="rounded-lg border border-primary/40 bg-card shadow-sm overflow-hidden"
         >
+          {/* Title */}
           <div className="flex items-start gap-2 px-3 pt-3 pb-2">
             <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0 mt-0.5" />
             <input
@@ -150,9 +179,71 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Titre du sous-ticket…"
               className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground/50 min-w-0"
-              onKeyDown={(e) => { if (e.key === 'Escape') handleCancel() }}
+              onKeyDown={(e) => { if (e.key === 'Escape') resetForm() }}
             />
           </div>
+
+          {/* Description */}
+          <div className="px-3 pb-2">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description (optionnelle)…"
+              rows={2}
+              className="w-full text-xs bg-transparent outline-none placeholder:text-muted-foreground/40 resize-none min-w-0 leading-relaxed"
+              onKeyDown={(e) => { if (e.key === 'Escape') resetForm() }}
+            />
+          </div>
+
+          {/* Type + Priority */}
+          <div className="grid grid-cols-2 gap-2 px-3 pb-2">
+            <Select value={type} onValueChange={(v) => setType(v as TicketType)}>
+              <SelectTrigger className="h-7 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TYPES.map((t) => (
+                  <SelectItem key={t} value={t} className="text-xs">
+                    {TICKET_TYPE_LABELS[t]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
+              <SelectTrigger className="h-7 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PRIORITIES.map((p) => (
+                  <SelectItem key={p} value={p} className="text-xs">
+                    {TICKET_PRIORITY_LABELS[p]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Assignee */}
+          {members.length > 0 && (
+            <div className="px-3 pb-2">
+              <Select value={assigneeId} onValueChange={setAssigneeId}>
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue placeholder="Non assigné" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" className="text-xs">Non assigné</SelectItem>
+                  {members.map((m) => (
+                    <SelectItem key={m._id} value={m._id} className="text-xs">
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Actions */}
           <div className="flex items-center gap-1.5 px-3 pb-2.5">
             <button
               type="submit"
@@ -164,7 +255,7 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
             </button>
             <button
               type="button"
-              onClick={handleCancel}
+              onClick={resetForm}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5"
             >
               Annuler

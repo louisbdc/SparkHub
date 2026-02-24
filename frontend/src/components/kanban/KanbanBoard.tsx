@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import {
   DndContext,
@@ -78,17 +78,6 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
   })
 
   const grouped = groupTicketsByStatus(filteredItems)
-
-  // Map parentId → Ticket[] for the tree-nested kanban display
-  const childrenMap = useMemo(() => {
-    const map = new Map<string, Ticket[]>()
-    for (const t of items) {
-      if (!t.parentId) continue
-      const arr = map.get(t.parentId) ?? []
-      map.set(t.parentId, [...arr, t])
-    }
-    return map
-  }, [items])
 
   const handleDragStart = useCallback(
     ({ active }: DragStartEvent) => {
@@ -224,8 +213,8 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
                 tickets={grouped[status]}
                 onTicketClick={onTicketClick}
                 onTicketEdit={onTicketEdit}
+                workspaceId={workspaceId}
                 onTicketDelete={(ticketId) => deleteTicket.mutate(ticketId)}
-                childrenMap={childrenMap}
               />
             ))}
           </div>
