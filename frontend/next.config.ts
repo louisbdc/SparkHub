@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+// Backend server URL (socket.io + API proxy in prod, localhost:5000 in dev)
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000'
+
+// Derive ws:// / wss:// equivalents
+const apiWs = apiUrl.replace(/^http/, 'ws')
+
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -18,7 +24,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      `connect-src 'self' ${apiUrl} ${apiWs} https://*.supabase.co wss://*.supabase.co`,
       "frame-ancestors 'none'",
     ].join('; '),
   },
