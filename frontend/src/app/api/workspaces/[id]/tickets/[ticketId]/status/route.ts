@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth-guard'
 import { sendSuccess, sendError } from '@/lib/api-utils'
 import { isWorkspaceMemberOrOwner } from '@/lib/workspace-queries'
 import { mapTicket } from '@/lib/db-mappers'
+import { createNotification } from '@/lib/notifications'
 
 type Params = { params: Promise<{ id: string; ticketId: string }> }
 
@@ -52,6 +53,20 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       .select(TICKET_SELECT)
       .eq('id', ticketId)
       .single()
+
+    // Notify reporter and assignee of the status change (excluding the updater)
+    if (parsed.data.status) {
+      const workspaceLink = `/workspaces/${id}/kanban`
+      const notifBody = `Statut du ticket "${ticket?.title}" changé en "${parsed.data.status}"`
+      const recipients = new Set<string>()
+      if (ticket?.reporter_id && ticket.reporter_id !== userId) recipients.add(ticket.reporter_id)
+      if (ticket?.assignee_id && ticket.assignee_id !== userId) recipients.add(ticket.assignee_id)
+      await Promise.all(
+        [...recipients].map((uid) =>
+          createNotification(uid, 'ticket_status_changed', 'Statut modifié', notifBody, workspaceLink)
+        )
+      )
+    }
 
     return sendSuccess({ ticket: mapTicket(ticket) })
   } catch (e) {

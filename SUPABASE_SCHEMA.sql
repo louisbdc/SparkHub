@@ -89,6 +89,18 @@ create table if not exists attachments (
   uploaded_at  timestamptz not null default now()
 );
 
+-- ── Notifications ─────────────────────────────────────────────────────────────
+create table if not exists notifications (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references profiles(id) on delete cascade,
+  type       text not null check (type in ('ticket_assigned', 'ticket_commented', 'ticket_status_changed')),
+  title      text not null,
+  body       text not null default '',
+  link       text not null default '',
+  is_read    boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 -- ── Auto-update updated_at ────────────────────────────────────────────────────
 create or replace function update_updated_at()
 returns trigger as $$
@@ -146,6 +158,7 @@ alter table tickets           disable row level security;
 alter table comments          disable row level security;
 alter table messages          disable row level security;
 alter table attachments       disable row level security;
+alter table notifications     disable row level security;
 
 -- ── Indexes ───────────────────────────────────────────────────────────────────
 create index if not exists idx_workspace_members_user on workspace_members(user_id);
@@ -155,3 +168,4 @@ create index if not exists idx_tickets_status_order    on tickets(workspace_id, 
 create index if not exists idx_comments_ticket         on comments(ticket_id);
 create index if not exists idx_messages_workspace      on messages(workspace_id, created_at);
 create index if not exists idx_attachments_ticket      on attachments(ticket_id);
+create index if not exists idx_notifications_user      on notifications(user_id, is_read, created_at desc);

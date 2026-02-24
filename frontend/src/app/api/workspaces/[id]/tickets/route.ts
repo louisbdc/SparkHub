@@ -6,6 +6,7 @@ import { sendSuccess, sendError } from '@/lib/api-utils'
 import { isWorkspaceMemberOrOwner } from '@/lib/workspace-queries'
 import { mapTicket } from '@/lib/db-mappers'
 import { uploadFile } from '@/lib/file-upload'
+import { createNotification } from '@/lib/notifications'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -131,6 +132,18 @@ export async function POST(request: NextRequest, { params }: Params) {
       .single()
 
     if (fetchError || !ticket) return sendError('Ticket créé mais récupération échouée', 500)
+
+    // Notify assignee if different from reporter
+    if (assigneeId && assigneeId !== userId) {
+      const workspaceLink = `/workspaces/${id}/kanban`
+      await createNotification(
+        assigneeId,
+        'ticket_assigned',
+        'Ticket assigné',
+        `Vous avez été assigné au ticket "${title}"`,
+        workspaceLink
+      )
+    }
 
     return sendSuccess({ ticket: mapTicket(ticket) }, 201)
   } catch (e) {

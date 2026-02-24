@@ -6,6 +6,7 @@ import { sendSuccess, sendError } from '@/lib/api-utils'
 import { isWorkspaceMemberOrOwner } from '@/lib/workspace-queries'
 import { mapTicket } from '@/lib/db-mappers'
 import { uploadFile } from '@/lib/file-upload'
+import { createNotification } from '@/lib/notifications'
 
 type Params = { params: Promise<{ id: string; ticketId: string }> }
 
@@ -119,6 +120,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
 
     const ticket = await fetchTicket(ticketId, id)
+
+    // Notify new assignee if changed and different from updater
+    const newAssigneeId = parsed.data.assigneeId
+    if (
+      newAssigneeId &&
+      newAssigneeId !== existing.assignee_id &&
+      newAssigneeId !== userId
+    ) {
+      await createNotification(
+        newAssigneeId,
+        'ticket_assigned',
+        'Ticket assigné',
+        `Vous avez été assigné au ticket "${existing.title}"`,
+        `/workspaces/${id}/kanban`
+      )
+    }
+
     return sendSuccess({ ticket: mapTicket(ticket!) })
   } catch (e) {
     if (e instanceof Response) return e

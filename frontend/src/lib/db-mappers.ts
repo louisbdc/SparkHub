@@ -8,6 +8,8 @@ import type {
   Message,
   MessageImage,
   MessageReply,
+  Notification,
+  NotificationType,
   Ticket,
   User,
   Workspace,
@@ -212,6 +214,29 @@ function mapReplyMessage(row: DbReplyMessage): MessageReply {
     _id: row.id,
     content: row.content,
     author: { _id: row.author.id, name: row.author.name },
+  }
+}
+
+export interface DbNotification {
+  id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string
+  link: string
+  is_read: boolean
+  created_at: string
+}
+
+export function mapNotification(row: DbNotification): Notification {
+  return {
+    _id: row.id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    link: row.link,
+    isRead: row.is_read,
+    createdAt: row.created_at,
   }
 }
 

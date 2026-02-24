@@ -164,6 +164,18 @@ export const TICKET_TYPE_LABELS: Record<TicketType, string> = {
   improvement: 'Amélioration',
 }
 
+export type NotificationType = 'ticket_assigned' | 'ticket_commented' | 'ticket_status_changed'
+
+export interface Notification {
+  _id: string
+  type: NotificationType
+  title: string
+  body: string
+  link: string
+  isRead: boolean
+  createdAt: string
+}
+
 export const TICKET_STATUSES: TicketStatus[] = [
   'backlog',
   'todo',

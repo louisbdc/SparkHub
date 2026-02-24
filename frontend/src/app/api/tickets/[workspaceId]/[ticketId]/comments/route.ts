@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth-guard'
 import { sendSuccess, sendError } from '@/lib/api-utils'
 import { isWorkspaceMemberOrOwner } from '@/lib/workspace-queries'
 import { mapComment } from '@/lib/db-mappers'
+import { createNotification } from '@/lib/notifications'
 
 type Params = { params: Promise<{ workspaceId: string; ticketId: string }> }
 
@@ -66,6 +67,26 @@ export async function POST(request: NextRequest, { params }: Params) {
       .select(COMMENT_SELECT)
       .eq('id', created.id)
       .single()
+
+    // Notify ticket reporter and assignee (excluding the commenter)
+    const { data: ticket } = await supabaseAdmin
+      .from('tickets')
+      .select('title, reporter_id, assignee_id')
+      .eq('id', ticketId)
+      .single()
+
+    if (ticket) {
+      const workspaceLink = `/workspaces/${workspaceId}/kanban`
+      const notifBody = `Nouveau commentaire sur le ticket "${ticket.title}"`
+      const recipients = new Set<string>()
+      if (ticket.reporter_id !== userId) recipients.add(ticket.reporter_id)
+      if (ticket.assignee_id && ticket.assignee_id !== userId) recipients.add(ticket.assignee_id)
+      await Promise.all(
+        [...recipients].map((uid) =>
+          createNotification(uid, 'ticket_commented', 'Nouveau commentaire', notifBody, workspaceLink)
+        )
+      )
+    }
 
     return sendSuccess({ comment: mapComment(comment) }, 201)
   } catch (e) {

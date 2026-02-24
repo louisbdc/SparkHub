@@ -7,6 +7,7 @@ import type {
   CreateTicketDto,
   LoginCredentials,
   Message,
+  Notification,
   Ticket,
   UpdateTicketDto,
   Workspace,
@@ -465,6 +466,25 @@ export const messagesApi = {
 
   delete: async (workspaceId: string, messageId: string): Promise<void> => {
     await apiClient.delete(`/workspaces/${workspaceId}/messages/${messageId}`)
+  },
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export const notificationsApi = {
+  list: async (): Promise<{ notifications: Notification[]; unreadCount: number }> => {
+    const { data } = await apiClient.get<ApiResponse<{ notifications: Notification[]; unreadCount: number }>>(
+      '/notifications'
+    )
+    return data.data!
+  },
+
+  markRead: async (id: string): Promise<void> => {
+    await apiClient.patch(`/notifications/${id}/read`)
+  },
+
+  markAllRead: async (): Promise<void> => {
+    await apiClient.patch('/notifications/read-all')
   },
 }
 
