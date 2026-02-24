@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSuccess, sendError } from '@/lib/api-utils'
-import { mapProfile } from '@/lib/db-mappers'
 
 const schema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8),
   role: z.enum(['dev', 'client']).default('client'),
 })
 
@@ -21,12 +21,21 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, role } = parsed.data
 
-    // Create auth user — email confirmation required before sign in
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+    // Use the regular signUp flow (not admin) so Supabase sends the confirmation email
+    const supabaseAnon = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    const { data: authData, error: authError } = await supabaseAnon.auth.signUp({
       email,
       password,
-      email_confirm: false,
-      user_metadata: { name, role },
+      options: {
+        data: { name, role },
+        emailRedirectTo: `${appUrl}/login`,
+      },
     })
 
     if (authError) {
@@ -36,17 +45,18 @@ export async function POST(request: NextRequest) {
       return sendError(msg, 409)
     }
 
-    const userId = authData.user.id
+    if (!authData.user) {
+      return sendError("Erreur lors de la création du compte", 500)
+    }
 
-    // Insert profile (trigger may also do this — use upsert to be safe)
-    const { data: profile, error: profileError } = await supabaseAdmin
+    // Create profile row immediately so it exists when the user confirms and logs in
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .upsert({ id: userId, name, email, role })
-      .select()
-      .single()
+      .upsert({ id: authData.user.id, name, email, role })
 
-    if (profileError || !profile) {
-      await supabaseAdmin.auth.admin.deleteUser(userId)
+    if (profileError) {
+      console.error('[register] profile upsert error:', profileError)
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
       return sendError('Erreur lors de la création du profil', 500)
     }
 
