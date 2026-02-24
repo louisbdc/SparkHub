@@ -105,22 +105,54 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
   const handleSend = () => {
     const trimmed = content.trim()
     if (!trimmed && pendingImages.length === 0) return
+    if (!currentUser) return
 
     stopTyping()
+
+    // Capture before clearing state
+    const capturedFiles = [...pendingImages]
+    const capturedPreviews = [...imagePreviews]
+    const capturedReplyTo = replyingTo
+
+    const optimistic: Message = {
+      _id: `optimistic-${Date.now()}`,
+      workspace: workspaceId,
+      author: currentUser,
+      content: trimmed,
+      replyTo: capturedReplyTo
+        ? {
+            _id: capturedReplyTo._id,
+            content: capturedReplyTo.content,
+            author: { _id: capturedReplyTo.author._id, name: capturedReplyTo.author.name },
+          }
+        : undefined,
+      images: capturedFiles.map((file, i) => ({
+        _id: `optimistic-img-${i}`,
+        mimeType: file.type,
+        originalname: file.name,
+        size: file.size,
+        url: capturedPreviews[i],
+      })),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+
+    // Clear input immediately — feedback is the optimistic message
+    setContent('')
+    setPendingImages([])
+    setImagePreviews([])
+    setReplyingTo(null)
+
     createMessage.mutate(
       {
         content: trimmed,
-        replyTo: replyingTo?._id,
-        images: pendingImages.length > 0 ? pendingImages : undefined,
+        replyTo: capturedReplyTo?._id,
+        images: capturedFiles.length > 0 ? capturedFiles : undefined,
+        optimistic,
       },
       {
-        onSuccess: () => {
-          setContent('')
-          imagePreviews.forEach(URL.revokeObjectURL)
-          setPendingImages([])
-          setImagePreviews([])
-          setReplyingTo(null)
-        },
+        // Revoke object URLs once the optimistic message is replaced or rolled back
+        onSettled: () => capturedPreviews.forEach(URL.revokeObjectURL),
       }
     )
   }
@@ -136,8 +168,7 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
     }
   }
 
-  const canSend =
-    (content.trim().length > 0 || pendingImages.length > 0) && !createMessage.isPending
+  const canSend = content.trim().length > 0 || pendingImages.length > 0
 
   return (
     <div className="flex flex-col h-full">
@@ -258,11 +289,7 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
               disabled={!canSend}
               className="p-1.5 rounded-full text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
             >
-              {createMessage.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Smile className="w-5 h-5" />
-              )}
+              <Smile className="w-5 h-5" />
             </button>
           </div>
         </div>
