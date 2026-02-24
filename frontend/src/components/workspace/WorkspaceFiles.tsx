@@ -112,16 +112,14 @@ export function WorkspaceFiles({ workspaceId, onTicketClick }: WorkspaceFilesPro
             </div>
 
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-              <a
-                href={filesApi.getUrl(attachment._id, true)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); filesApi.download(attachment._id, attachment.originalname) }}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 title="Télécharger"
               >
                 <Download className="w-4 h-4" />
-              </a>
+              </button>
             </div>
           </div>
         ))}

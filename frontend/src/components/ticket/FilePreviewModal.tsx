@@ -89,15 +89,14 @@ export function FilePreviewModal({ attachment, onClose }: FilePreviewModalProps)
         </div>
 
         <div className="flex justify-end">
-          <Button asChild variant="outline" size="sm">
-            <a
-              href={filesApi.getUrl(attachment?.fileId ?? '', true)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5" />
-              Télécharger
-            </a>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!attachment}
+            onClick={() => attachment && filesApi.download(attachment.fileId, attachment.originalname)}
+          >
+            <Download className="w-3.5 h-3.5 mr-1.5" />
+            Télécharger
           </Button>
         </div>
       </DialogContent>

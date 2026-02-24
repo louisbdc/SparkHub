@@ -522,6 +522,23 @@ export const filesApi = {
     return data.data!.url
   },
 
+  download: async (fileId: string, originalname: string): Promise<void> => {
+    const { data } = await apiClient.get<ApiResponse<{ url: string }>>(
+      `/files/${fileId}?json=1`
+    )
+    const signedUrl = data.data!.url
+    const res = await fetch(signedUrl)
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = originalname
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(blobUrl)
+  },
+
   delete: async (fileId: string): Promise<void> => {
     await apiClient.delete(`/files/${fileId}`)
   },

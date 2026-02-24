@@ -211,15 +211,14 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
                             >
                               {att.originalname}
                             </button>
-                            <a
-                              href={filesApi.getUrl(att.fileId, true)}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => filesApi.download(att.fileId, att.originalname)}
                               className="shrink-0 text-muted-foreground hover:text-foreground"
                               title="Télécharger"
                             >
                               <Download className="w-3.5 h-3.5" />
-                            </a>
+                            </button>
                           </li>
                         ))}
                         {addAttachments.isPending && (
