@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const PUBLIC_ROUTES = ['/login', '/register', '/invite/accept']
+const PUBLIC_ROUTES = ['/login', '/register', '/invite/accept', '/forgot-password', '/reset-password']
 const TOKEN_KEY = 'sparkhub_token'
 
 export function proxy(request: NextRequest) {
