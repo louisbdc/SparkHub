@@ -47,15 +47,30 @@ export async function POST(request: NextRequest) {
 
     // Add to workspace
     if (workspaceId) {
-      await supabaseAdmin
+      const { error: memberError } = await supabaseAdmin
         .from('workspace_members')
-        .upsert({ workspace_id: workspaceId, user_id: user.id, role })
+        .upsert(
+          { workspace_id: workspaceId, user_id: user.id, role },
+          { onConflict: 'workspace_id,user_id' }
+        )
+      if (memberError) console.error('[invite/accept] workspace_members upsert error:', memberError)
+    }
+
+    // Sign in with the new password to get a fresh session
+    const { data: session, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+      email: user.email!,
+      password,
+    })
+
+    if (signInError || !session.session) {
+      // Fallback: return the original invite token (still valid for ~1h)
+      return sendSuccess({ user: mapProfile(profile), token, refreshToken })
     }
 
     return sendSuccess({
       user: mapProfile(profile),
-      token,
-      refreshToken,
+      token: session.session.access_token,
+      refreshToken: session.session.refresh_token,
     })
   } catch {
     return sendError('Erreur serveur', 500)
