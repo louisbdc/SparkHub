@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -57,16 +57,25 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
     ...(workspace?.members.map((m) => m.user) ?? []),
   ].filter((u, i, arr) => arr.findIndex((x) => x._id === u._id) === i)
 
+  const defaultDev = members.find((m) => m.role === 'dev' || m.role === 'admin')
+
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
     reset,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { priority: 'medium', type: 'task' },
   })
+
+  useEffect(() => {
+    if (defaultDev) {
+      setValue('assigneeId', defaultDev._id)
+    }
+  }, [defaultDev?._id])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? [])
@@ -165,7 +174,10 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
       {members.length > 0 && (
         <div className="space-y-2">
           <Label>Assigné à</Label>
-          <Select onValueChange={(v) => setValue('assigneeId', v === 'none' ? undefined : v)}>
+          <Select
+            value={watch('assigneeId') ?? 'none'}
+            onValueChange={(v) => setValue('assigneeId', v === 'none' ? undefined : v)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Non assigné" />
             </SelectTrigger>
