@@ -10,7 +10,12 @@ import { NotificationBell } from '@/components/layout/NotificationBell'
 import { DashboardStatCards } from '@/components/dashboard/DashboardStatCards'
 import { MyTickets } from '@/components/dashboard/MyTickets'
 import { UrgentTickets } from '@/components/dashboard/UrgentTickets'
-import { AllTickets } from '@/components/dashboard/AllTickets'
+import dynamic from 'next/dynamic'
+
+const AllTickets = dynamic(
+  () => import('@/components/dashboard/AllTickets').then((m) => ({ default: m.AllTickets })),
+  { ssr: false }
+)
 import { useMobileSidebar } from '@/components/layout/AppShell'
 
 export default function DashboardPage() {
