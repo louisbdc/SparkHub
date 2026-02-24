@@ -34,7 +34,7 @@ function NotificationItem({
     <button
       onClick={() => onRead(notification._id, notification.link)}
       className={cn(
-        'w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/60',
+        'w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/60 cursor-pointer',
         !notification.isRead && 'bg-primary/5'
       )}
     >
