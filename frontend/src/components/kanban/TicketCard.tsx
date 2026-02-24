@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MoreVertical, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -105,12 +106,12 @@ export function TicketCard({ ticket, onClick, onDelete }: TicketCardProps) {
         </Badge>
 
         {ticket.assignee && (
-          <div
-            className="ml-auto w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-semibold text-primary shrink-0"
-            title={ticket.assignee.name}
-          >
-            {ticket.assignee.name[0].toUpperCase()}
-          </div>
+          <Avatar className="ml-auto w-5 h-5 shrink-0" title={ticket.assignee.name}>
+            <AvatarImage src={ticket.assignee.avatar ?? undefined} />
+            <AvatarFallback className="text-[9px] font-semibold">
+              {ticket.assignee.name[0].toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
         )}
       </div>
     </div>
