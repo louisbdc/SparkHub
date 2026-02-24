@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { email } = schema.parse(body)
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
     await supabaseAdmin.auth.resetPasswordForEmail(email, {
       redirectTo: `${siteUrl}/reset-password`,
