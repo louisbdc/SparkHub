@@ -28,7 +28,7 @@ export function KanbanColumn({ status, label, tickets, onTicketClick, onTicketDe
   const ticketIds = tickets.map((t) => t._id)
 
   return (
-    <div className="flex flex-col w-72 shrink-0 h-full">
+    <div className="flex flex-col w-[85vw] sm:w-72 shrink-0 h-full snap-center">
       {/* Column header */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <div className={cn('w-2 h-2 rounded-full', style.dot)} />

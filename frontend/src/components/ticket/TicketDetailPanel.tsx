@@ -4,6 +4,8 @@ import { useCallback, useRef, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Download, Loader2, Paperclip, Send } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useSkeletonVisible } from '@/hooks/useSkeletonVisible'
 import {
   Sheet,
   SheetContent,
@@ -54,6 +56,7 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose }: TicketDetail
   const createComment = useCreateComment(workspaceId, ticket?._id ?? '')
   const deleteComment = useDeleteComment(workspaceId, ticket?._id ?? '')
   const addAttachments = useAddAttachments(workspaceId)
+  const showCommentsSkeleton = useSkeletonVisible(commentsLoading)
 
   const { typingUsers, emitTypingStart, emitTypingStop } = useTicketSocket(
     workspaceId,
@@ -224,9 +227,14 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose }: TicketDetail
                   Commentaires ({comments.length})
                 </p>
 
-                {commentsLoading && (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                {showCommentsSkeleton && (
+                  <div className="flex flex-col gap-3">
+                    {[false, true, false].map((isRight, i) => (
+                      <div key={i} className={`flex flex-col gap-1.5 ${isRight ? 'items-end' : ''}`}>
+                        <Skeleton className="h-2.5 w-20" />
+                        <Skeleton className={`h-10 rounded-2xl ${isRight ? 'w-3/4' : 'w-4/5'}`} />
+                      </div>
+                    ))}
                   </div>
                 )}
 

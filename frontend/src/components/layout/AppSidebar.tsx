@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useSkeletonVisible } from '@/hooks/useSkeletonVisible'
 
 const CreateWorkspaceDialog = dynamic(
   () => import('@/components/workspace/CreateWorkspaceDialog').then((m) => m.CreateWorkspaceDialog),
@@ -21,10 +23,11 @@ const NAV_ITEMS = [
   { href: '/settings', icon: Settings, label: 'Paramètres' },
 ]
 
-export function AppSidebar() {
+export function SidebarContent() {
   const pathname = usePathname()
   const { data: user } = useCurrentUser()
-  const { data: workspaces } = useWorkspaces()
+  const { data: workspaces, isLoading: workspacesLoading } = useWorkspaces()
+  const showWorkspacesSkeleton = useSkeletonVisible(workspacesLoading)
   const logout = useLogout()
 
   const initials = user?.name
@@ -37,7 +40,7 @@ export function AppSidebar() {
   const isDevOrAdmin = user?.role !== 'client'
 
   return (
-    <aside className="flex flex-col w-56 border-r bg-background shrink-0 h-full">
+    <>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 h-14 border-b shrink-0">
         <Image src="/logo_sparkhub.png" alt="Sparkhub" width={28} height={28} className="rounded-lg" />
@@ -83,6 +86,17 @@ export function AppSidebar() {
               />
             )}
           </div>
+
+          {showWorkspacesSkeleton && (
+            <div className="flex flex-col gap-1 px-1">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2.5 px-2 py-2">
+                  <Skeleton className="w-2.5 h-2.5 rounded-full shrink-0" />
+                  <Skeleton className={`h-3 rounded ${i === 0 ? 'w-24' : i === 1 ? 'w-20' : 'w-28'}`} />
+                </div>
+              ))}
+            </div>
+          )}
 
           {workspaces && workspaces.length === 0 && (
             <p className="px-3 text-xs text-muted-foreground/50 italic">
@@ -137,6 +151,14 @@ export function AppSidebar() {
           </Button>
         </div>
       </div>
+    </>
+  )
+}
+
+export function AppSidebar() {
+  return (
+    <aside className="hidden md:flex flex-col w-56 border-r bg-background shrink-0 h-full">
+      <SidebarContent />
     </aside>
   )
 }

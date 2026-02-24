@@ -2,7 +2,9 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ImageIcon, Loader2, Reply, Send, Smile, X } from 'lucide-react'
+import { ImageIcon, Reply, Send, Smile, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 import data from '@emoji-mart/data'
 
 const EmojiPicker = dynamic(() => import('@emoji-mart/react'), { ssr: false })
@@ -211,12 +213,27 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Messages list */}
-      <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-3">
-        {isLoading && (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
+      <div className="relative flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-3">
+        {/* Skeleton overlay */}
+        <div
+          className={cn(
+            'absolute inset-0 px-6 py-5 flex flex-col gap-4 pointer-events-none transition-opacity duration-200 z-10',
+            isLoading ? 'opacity-100' : 'opacity-0'
+          )}
+        >
+          {[
+            { right: false, w: 'w-[55%]' },
+            { right: true,  w: 'w-[45%]' },
+            { right: false, w: 'w-[65%]' },
+            { right: true,  w: 'w-[38%]' },
+            { right: false, w: 'w-[50%]' },
+          ].map(({ right, w }, i) => (
+            <div key={i} className={`flex flex-col gap-1.5 ${right ? 'items-end' : 'items-start'}`}>
+              <Skeleton className="h-2.5 w-24" />
+              <Skeleton className={`h-10 rounded-2xl ${w}`} />
+            </div>
+          ))}
+        </div>
 
         {!isLoading && messages.length === 0 && (
           <p className="text-sm text-muted-foreground italic text-center py-8">

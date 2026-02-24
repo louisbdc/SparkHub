@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { cn } from '@/lib/utils'
 import {
   DndContext,
   DragOverlay,
@@ -11,9 +12,9 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
-import { Loader2 } from 'lucide-react'
 import { KanbanColumn } from './KanbanColumn'
 import { TicketCard } from './TicketCard'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   groupTicketsByStatus,
   useTickets,
@@ -131,40 +132,74 @@ export function KanbanBoard({ workspaceId, onTicketClick }: KanbanBoardProps) {
     [items, updateTicket]
   )
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center flex-1 py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex gap-4 p-6 overflow-x-auto h-full">
-        {TICKET_STATUSES.map((status) => (
-          <KanbanColumn
-            key={status}
-            status={status}
-            label={TICKET_STATUS_LABELS[status]}
-            tickets={grouped[status]}
-            onTicketClick={onTicketClick}
-            onTicketDelete={(ticketId) => deleteTicket.mutate(ticketId)}
-          />
-        ))}
+    <div className="relative h-full overflow-hidden">
+      {/* Skeleton overlay — CSS crossfade, no timing hacks needed */}
+      <div
+        className={cn(
+          'absolute inset-0 z-10 pointer-events-none transition-opacity duration-200',
+          isLoading ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        <div className="flex gap-4 p-4 sm:p-6 h-full overflow-hidden">
+          {[3, 2, 1, 1].map((cardCount, i) => (
+            <div key={i} className="flex flex-col w-[85vw] sm:w-72 shrink-0 gap-3">
+              <div className="flex items-center gap-2 px-1">
+                <Skeleton className="w-2 h-2 rounded-full" />
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-4 w-6 ml-auto rounded-full" />
+              </div>
+              <div className="flex flex-col gap-2 rounded-xl bg-muted/30 p-2">
+                {[...Array(cardCount)].map((_, j) => (
+                  <div key={j} className="rounded-lg border bg-card p-3 space-y-2">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-4/5" />
+                    <div className="flex gap-1.5 mt-3">
+                      <Skeleton className="h-4 w-12 rounded-full" />
+                      <Skeleton className="h-4 w-14 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <DragOverlay>
-        {activeTicket && (
-          <div className="rotate-2 shadow-xl opacity-90">
-            <TicketCard ticket={activeTicket} onClick={() => {}} onDelete={() => {}} />
-          </div>
+      {/* Real content — always rendered, fades in as skeleton fades out */}
+      <div
+        className={cn(
+          'h-full transition-opacity duration-200',
+          isLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'
         )}
-      </DragOverlay>
-    </DndContext>
+      >
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex gap-4 p-4 sm:p-6 overflow-x-auto h-full snap-x snap-mandatory">
+            {TICKET_STATUSES.map((status) => (
+              <KanbanColumn
+                key={status}
+                status={status}
+                label={TICKET_STATUS_LABELS[status]}
+                tickets={grouped[status]}
+                onTicketClick={onTicketClick}
+                onTicketDelete={(ticketId) => deleteTicket.mutate(ticketId)}
+              />
+            ))}
+          </div>
+
+          <DragOverlay>
+            {activeTicket && (
+              <div className="rotate-2 shadow-xl opacity-90">
+                <TicketCard ticket={activeTicket} onClick={() => {}} onDelete={() => {}} />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      </div>
+    </div>
   )
 }

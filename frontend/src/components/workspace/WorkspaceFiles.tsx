@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { ArrowUpRight, Download, FileText, Paperclip } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useTickets } from '@/hooks/useTickets'
 import { filesApi } from '@/lib/api'
 import { formatDistanceToNow } from 'date-fns'
@@ -36,15 +38,7 @@ export function WorkspaceFiles({ workspaceId, onTicketClick }: WorkspaceFilesPro
         new Date(a.attachment.uploadedAt).getTime()
     )
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        Chargement...
-      </div>
-    )
-  }
-
-  if (files.length === 0) {
+  if (!isLoading && files.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
         <Paperclip className="w-8 h-8 opacity-30" />
@@ -55,8 +49,29 @@ export function WorkspaceFiles({ workspaceId, onTicketClick }: WorkspaceFilesPro
 
   return (
     <>
-    <div className="p-6">
-      <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground/60 mb-4">
+    <div className="relative p-6">
+      {/* Skeleton overlay */}
+      <div
+        className={cn(
+          'absolute inset-0 p-6 flex flex-col gap-2 pointer-events-none transition-opacity duration-200 z-10',
+          isLoading ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3 rounded-lg border">
+            <Skeleton className="w-9 h-9 rounded-md shrink-0" />
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <Skeleton className={`h-3 ${i % 2 === 0 ? 'w-3/5' : 'w-2/5'}`} />
+              <Skeleton className="h-2.5 w-1/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className={cn(
+        'text-xs font-medium uppercase tracking-widest text-muted-foreground/60 mb-4 transition-opacity duration-200',
+        isLoading ? 'opacity-0' : 'opacity-100'
+      )}>
         {files.length} fichier{files.length > 1 ? 's' : ''}
       </p>
 

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import { ChevronLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { SettingCard } from '@/components/settings/SettingCard'
 import { WorkspaceGeneralForm } from '@/components/settings/WorkspaceGeneralForm'
 import { MembersManager } from '@/components/settings/MembersManager'
@@ -21,8 +22,30 @@ export default function WorkspaceSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-3 px-6 h-14 border-b shrink-0">
+          <Skeleton className="w-4 h-4" />
+          <Skeleton className="w-2.5 h-2.5 rounded-full" />
+          <Skeleton className="h-3.5 w-40" />
+        </div>
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-2xl mx-auto px-6 py-8 space-y-4">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="rounded-xl border p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-px w-full" />
+                <div className="space-y-3">
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  {i === 1 && <Skeleton className="h-9 w-full" />}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
