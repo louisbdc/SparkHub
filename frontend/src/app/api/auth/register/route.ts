@@ -21,11 +21,11 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, role } = parsed.data
 
-    // Create auth user (auto-confirmed)
+    // Create auth user — email confirmation required before sign in
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,
+      email_confirm: false,
       user_metadata: { name, role },
     })
 
@@ -50,24 +50,7 @@ export async function POST(request: NextRequest) {
       return sendError('Erreur lors de la création du profil', 500)
     }
 
-    // Sign in to get access token
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (sessionError || !sessionData.session) {
-      return sendError('Compte créé mais connexion échouée', 500)
-    }
-
-    return sendSuccess(
-      {
-        user: mapProfile(profile),
-        token: sessionData.session.access_token,
-        refreshToken: sessionData.session.refresh_token,
-      },
-      201
-    )
+    return sendSuccess({ emailConfirmationRequired: true }, 201)
   } catch {
     return sendError('Erreur serveur', 500)
   }

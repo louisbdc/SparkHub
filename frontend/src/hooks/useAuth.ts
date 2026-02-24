@@ -28,6 +28,7 @@ export function useRegister() {
       role: 'dev' | 'client'
     }) => authApi.register(payload),
     onSuccess: (data) => {
+      if (data.emailConfirmationRequired) return
       setToken(data.token)
       queryClient.setQueryData(['auth', 'me'], data.user)
       router.push('/dashboard')

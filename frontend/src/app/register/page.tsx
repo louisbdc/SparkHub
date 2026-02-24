@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2 } from 'lucide-react'
+import { CheckCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -48,6 +48,38 @@ export default function RegisterPage() {
 
   const onSubmit = ({ confirmPassword: _c, ...values }: RegisterFormValues) => {
     register_.mutate(values)
+  }
+
+  if (register_.data?.emailConfirmationRequired) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="inline-flex mb-5">
+              <Image src="/logo_sparkhub.png" alt="Sparkhub" width={56} height={56} className="rounded-2xl shadow-sm" />
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Sparkhub</h1>
+          </div>
+          <div className="bg-card border border-border rounded-xl shadow-sm p-7 text-center space-y-4">
+            <div className="flex justify-center">
+              <CheckCircle className="w-10 h-10 text-green-500" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">Vérifiez votre email</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Un lien de confirmation vous a été envoyé. Cliquez dessus pour activer votre compte.
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">Pensez à vérifier vos spams.</p>
+          </div>
+          <p className="text-center text-sm text-muted-foreground mt-5">
+            <Link href="/login" className="text-foreground hover:underline font-medium">
+              Retour à la connexion
+            </Link>
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

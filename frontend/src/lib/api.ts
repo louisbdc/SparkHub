@@ -113,8 +113,8 @@ export const authApi = {
     email: string
     password: string
     role?: 'dev' | 'client'
-  }): Promise<AuthResponse> => {
-    const { data } = await apiClient.post<ApiResponse<AuthResponse & { refreshToken: string }>>(
+  }): Promise<AuthResponse & { emailConfirmationRequired?: boolean }> => {
+    const { data } = await apiClient.post<ApiResponse<AuthResponse & { refreshToken: string; emailConfirmationRequired?: boolean }>>(
       '/auth/register',
       payload
     )
@@ -434,6 +434,13 @@ export const messagesApi = {
       body
     )
     return data.data!.message
+  },
+
+  getImageUrl: async (imageId: string): Promise<{ url: string; mimeType: string; originalname: string }> => {
+    const { data } = await apiClient.get<ApiResponse<{ url: string; mimeType: string; originalname: string }>>(
+      `/messages/images/${imageId}?json=1`
+    )
+    return data.data!
   },
 
   getById: async (workspaceId: string, messageId: string): Promise<Message> => {
