@@ -13,6 +13,7 @@ export function useTickets(workspaceId: string) {
     queryFn: () => ticketsApi.list(workspaceId),
     enabled: Boolean(workspaceId),
     refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
     staleTime: 8_000,
   })
 }
@@ -37,7 +38,7 @@ export function useAddAttachments(workspaceId: string) {
 
   return useMutation({
     mutationFn: ({ ticketId, files }: { ticketId: string; files: File[] }) =>
-      ticketsApi.update(workspaceId, ticketId, {} as UpdateTicketDto, files),
+      ticketsApi.update(workspaceId, ticketId, {}, files),
     onSuccess: (updatedTicket) => {
       queryClient.setQueryData<Ticket[]>(
         ticketsKey(workspaceId),

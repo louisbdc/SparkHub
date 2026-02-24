@@ -31,6 +31,7 @@ export function useDashboardTickets(workspaces: Workspace[] | undefined) {
   })
 
   const isLoading = results.some((r) => r.isLoading)
+  const isError = results.some((r) => r.isError)
 
-  return { allTickets, isLoading }
+  return { allTickets, isLoading, isError }
 }

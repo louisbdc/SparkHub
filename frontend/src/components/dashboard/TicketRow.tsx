@@ -2,23 +2,9 @@
 
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { PRIORITY_COLORS, STATUS_COLORS } from '@/lib/ticket-styles'
 import { TICKET_PRIORITY_LABELS, TICKET_STATUS_LABELS } from '@/types'
 import type { TicketWithWorkspace } from '@/hooks/useDashboardTickets'
-
-const PRIORITY_COLORS = {
-  urgent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  low: 'bg-muted text-muted-foreground',
-}
-
-const STATUS_COLORS = {
-  backlog: 'bg-muted text-muted-foreground',
-  todo: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  in_progress: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  review: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  done: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-}
 
 interface TicketRowProps {
   ticket: TicketWithWorkspace

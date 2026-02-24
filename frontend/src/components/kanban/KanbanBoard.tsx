@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   DndContext,
@@ -22,7 +23,7 @@ import {
   useUpdateTicket,
   useDeleteTicket,
 } from '@/hooks/useTickets'
-import { useWorkspace } from '@/hooks/useWorkspaces'
+import { useWorkspaceMembers } from '@/hooks/useWorkspaceMembers'
 import type { Ticket, TicketStatus } from '@/types'
 import { TICKET_STATUS_LABELS, TICKET_STATUSES } from '@/types'
 
@@ -33,17 +34,12 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: KanbanBoardProps) {
-  const { data: tickets = [], isLoading } = useTickets(workspaceId)
-  const { data: workspace } = useWorkspace(workspaceId)
+  const { data: tickets = [], isLoading, isError, refetch } = useTickets(workspaceId)
   const updateTicket = useUpdateTicket(workspaceId)
   const deleteTicket = useDeleteTicket(workspaceId)
+  const members = useWorkspaceMembers(workspaceId)
 
   const [filters, setFilters] = useState<KanbanFiltersState>(DEFAULT_KANBAN_FILTERS)
-
-  const members = [
-    ...(workspace?.owner ? [workspace.owner] : []),
-    ...(workspace?.members.map((m) => m.user) ?? []),
-  ].filter((u, i, arr) => arr.findIndex((x) => x._id === u._id) === i)
 
   // Local copy so we can update order synchronously on drop (no snap-back)
   const [items, setItems] = useState<Ticket[]>(tickets)
@@ -193,6 +189,14 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
           isLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'
         )}
       >
+        {isError && (
+          <div className="flex items-center gap-2 text-sm text-destructive mx-4 mt-4 p-4 border border-destructive/20 rounded-lg">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>Impossible de charger les tickets.</span>
+            <button onClick={() => refetch()} className="underline">Réessayer</button>
+          </div>
+        )}
+
         <KanbanFilters
           filters={filters}
           onChange={setFilters}

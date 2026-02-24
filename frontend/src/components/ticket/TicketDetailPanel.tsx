@@ -19,7 +19,7 @@ import { ChatBubble, TypingIndicator } from '@/components/ui/ChatBubble'
 import { useComments, useCreateComment, useDeleteComment } from '@/hooks/useComments'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useAddAttachments, useChildTickets, useTickets } from '@/hooks/useTickets'
-import { useWorkspace } from '@/hooks/useWorkspaces'
+import { useWorkspaceMembers } from '@/hooks/useWorkspaceMembers'
 import { useTicketSocket } from '@/hooks/useTicketSocket'
 import { filesApi } from '@/lib/api'
 import { FilePreviewModal } from './FilePreviewModal'
@@ -54,17 +54,12 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
 
   const { data: currentUser } = useCurrentUser()
   const { data: tickets } = useTickets(workspaceId)
-  const { data: workspace } = useWorkspace(workspaceId)
+  const members = useWorkspaceMembers(workspaceId)
   // For sub-tickets, useTickets doesn't include them — look them up in the child cache instead
   const { data: siblings } = useChildTickets(workspaceId, ticket?.parentId ?? '')
   const liveTicket =
     (ticket && (tickets?.find((t) => t._id === ticket._id) ?? siblings?.find((t) => t._id === ticket._id))) ?? ticket
   const parentTicket = liveTicket?.parentId ? (tickets?.find((t) => t._id === liveTicket.parentId) ?? null) : null
-
-  const members = [
-    ...(workspace?.owner ? [workspace.owner] : []),
-    ...(workspace?.members.map((m) => m.user) ?? []),
-  ].filter((u, i, arr) => arr.findIndex((x) => x._id === u._id) === i)
 
   const { data: comments = [], isLoading: commentsLoading } = useComments(
     workspaceId,
