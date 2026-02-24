@@ -54,10 +54,7 @@ apiClient.interceptors.response.use(
           // Queue this request until the refresh completes
           return new Promise((resolve) => {
             pendingRequests.push((token) => {
-              originalRequest.headers = {
-                ...originalRequest.headers,
-                Authorization: `Bearer ${token}`,
-              }
+              originalRequest.headers.set('Authorization', `Bearer ${token}`)
               resolve(apiClient(originalRequest))
             })
           })
@@ -82,10 +79,7 @@ apiClient.interceptors.response.use(
           pendingRequests.forEach((cb) => cb(newToken))
           pendingRequests = []
 
-          originalRequest.headers = {
-            ...originalRequest.headers,
-            Authorization: `Bearer ${newToken}`,
-          }
+          originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
           return apiClient(originalRequest)
         } catch {
           pendingRequests = []
@@ -400,9 +394,32 @@ export const messagesApi = {
     return data.data?.messages ?? []
   },
 
-  create: async (workspaceId: string, content: string): Promise<Message> => {
+  create: async (
+    workspaceId: string,
+    payload: { content: string; replyTo?: string; images?: File[] }
+  ): Promise<Message> => {
+    let body: FormData | { content: string; replyTo?: string }
+
+    if (payload.images && payload.images.length > 0) {
+      const form = new FormData()
+      form.append('content', payload.content)
+      if (payload.replyTo) form.append('replyTo', payload.replyTo)
+      payload.images.forEach((img) => form.append('images', img))
+      body = form
+    } else {
+      body = { content: payload.content, ...(payload.replyTo ? { replyTo: payload.replyTo } : {}) }
+    }
+
     const { data } = await apiClient.post<ApiResponse<{ message: Message }>>(
       `/workspaces/${workspaceId}/messages`,
+      body
+    )
+    return data.data!.message
+  },
+
+  update: async (workspaceId: string, messageId: string, content: string): Promise<Message> => {
+    const { data } = await apiClient.patch<ApiResponse<{ message: Message }>>(
+      `/workspaces/${workspaceId}/messages/${messageId}`,
       { content }
     )
     return data.data!.message

@@ -2,13 +2,19 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, LogOut, Plus, Settings, Zap } from 'lucide-react'
+import { LayoutDashboard, LogOut, Plus, Settings } from 'lucide-react'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
-import { CreateWorkspaceDialog } from '@/components/workspace/CreateWorkspaceDialog'
+import dynamic from 'next/dynamic'
+
+const CreateWorkspaceDialog = dynamic(
+  () => import('@/components/workspace/CreateWorkspaceDialog').then((m) => m.CreateWorkspaceDialog),
+  { ssr: false }
+)
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -34,9 +40,7 @@ export function AppSidebar() {
     <aside className="flex flex-col w-56 border-r bg-background shrink-0 h-full">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 h-14 border-b shrink-0">
-        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary">
-          <Zap className="w-4 h-4 text-primary-foreground" />
-        </div>
+        <Image src="/logo_sparkhub.png" alt="Sparkhub" width={28} height={28} className="rounded-lg" />
         <span className="font-semibold text-sm tracking-tight">Sparkhub</span>
       </div>
 
