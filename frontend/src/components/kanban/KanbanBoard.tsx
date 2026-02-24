@@ -79,16 +79,13 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
 
   const grouped = groupTicketsByStatus(filteredItems)
 
-  // Map parentId → { total, done } for child progress indicators on cards
-  const childInfoMap = useMemo(() => {
-    const map = new Map<string, { total: number; done: number }>()
+  // Map parentId → Ticket[] for the tree-nested kanban display
+  const childrenMap = useMemo(() => {
+    const map = new Map<string, Ticket[]>()
     for (const t of items) {
       if (!t.parentId) continue
-      const prev = map.get(t.parentId) ?? { total: 0, done: 0 }
-      map.set(t.parentId, {
-        total: prev.total + 1,
-        done: prev.done + (t.status === 'done' ? 1 : 0),
-      })
+      const arr = map.get(t.parentId) ?? []
+      map.set(t.parentId, [...arr, t])
     }
     return map
   }, [items])
@@ -228,7 +225,7 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
                 onTicketClick={onTicketClick}
                 onTicketEdit={onTicketEdit}
                 onTicketDelete={(ticketId) => deleteTicket.mutate(ticketId)}
-                childInfoMap={childInfoMap}
+                childrenMap={childrenMap}
               />
             ))}
           </div>
@@ -236,13 +233,7 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
           <DragOverlay>
             {activeTicket && (
               <div className="rotate-2 shadow-xl opacity-90">
-                <TicketCard
-                  ticket={activeTicket}
-                  onClick={() => {}}
-                  onDelete={() => {}}
-                  childCount={childInfoMap.get(activeTicket._id)?.total}
-                  doneChildCount={childInfoMap.get(activeTicket._id)?.done}
-                />
+                <TicketCard ticket={activeTicket} onClick={() => {}} onDelete={() => {}} />
               </div>
             )}
           </DragOverlay>

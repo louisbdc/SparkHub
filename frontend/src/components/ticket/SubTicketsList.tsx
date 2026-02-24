@@ -51,9 +51,14 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
     })
   }
 
+  const handleCancel = () => {
+    setShowForm(false)
+    setTitle('')
+  }
+
   return (
-    <div className="flex flex-col gap-2.5">
-      {/* Header + progress bar */}
+    <div className="flex flex-col gap-3">
+      {/* Header + progress */}
       <div className="flex items-center gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground shrink-0">
           Sous-tickets
@@ -90,7 +95,6 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
                 onClick={() => onTicketClick(child)}
                 className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-muted/60 transition-colors group text-left"
               >
-                {/* Status circle */}
                 <div
                   className={cn(
                     'w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors',
@@ -101,11 +105,7 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
                     <Check className="w-2 h-2 text-white" strokeWidth={3} />
                   )}
                 </div>
-
-                {/* Priority dot */}
                 <div className={cn('w-1.5 h-1.5 rounded-full shrink-0', PRIORITY_DOT[child.priority])} />
-
-                {/* Title */}
                 <span
                   className={cn(
                     'text-xs flex-1 truncate transition-colors group-hover:text-foreground',
@@ -116,17 +116,14 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
                 >
                   {child.title}
                 </span>
-
-                {/* Assignee avatar */}
                 {child.assignee && (
                   <Avatar className="w-4 h-4 shrink-0" title={child.assignee.name}>
                     <AvatarImage src={child.assignee.avatar ?? undefined} />
                     <AvatarFallback className="text-[8px] font-semibold">
-                      {child.assignee.name[0].toUpperCase()}
+                      {(child.assignee.name[0] ?? '?').toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 )}
-
                 <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
               </button>
             </li>
@@ -135,55 +132,55 @@ export function SubTicketsList({ workspaceId, parentId, onTicketClick }: SubTick
       )}
 
       {!isLoading && total === 0 && !showForm && (
-        <p className="text-xs text-muted-foreground/60 italic px-2">Aucun sous-ticket</p>
+        <p className="text-xs text-muted-foreground/50 italic px-2">Aucun sous-ticket</p>
       )}
 
-      {/* Inline create */}
+      {/* Create */}
       {showForm ? (
-        <form onSubmit={handleSubmit} className="flex items-center gap-1.5 mt-0.5">
-          <div className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md border bg-background focus-within:ring-1 focus-within:ring-ring transition-shadow">
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-lg border border-primary/40 bg-card shadow-sm overflow-hidden"
+        >
+          <div className="flex items-start gap-2 px-3 pt-3 pb-2">
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0 mt-0.5" />
             <input
               autoFocus
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Titre du sous-ticket…"
-              className="flex-1 text-xs bg-transparent outline-none placeholder:text-muted-foreground/60 min-w-0"
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  setShowForm(false)
-                  setTitle('')
-                }
-              }}
+              className="flex-1 text-sm bg-transparent outline-none placeholder:text-muted-foreground/50 min-w-0"
+              onKeyDown={(e) => { if (e.key === 'Escape') handleCancel() }}
             />
-            {createChild.isPending && (
-              <Loader2 className="w-3 h-3 animate-spin text-muted-foreground shrink-0" />
-            )}
           </div>
-          <button
-            type="submit"
-            disabled={!title.trim() || createChild.isPending}
-            className="text-[11px] font-semibold px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40 shrink-0"
-          >
-            Créer
-          </button>
-          <button
-            type="button"
-            onClick={() => { setShowForm(false); setTitle('') }}
-            className="text-[11px] font-medium px-2 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-1.5 px-3 pb-2.5">
+            <button
+              type="submit"
+              disabled={!title.trim() || createChild.isPending}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+            >
+              {createChild.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+              Créer
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5"
+            >
+              Annuler
+            </button>
+          </div>
         </form>
       ) : (
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-muted-foreground/70 hover:text-foreground transition-colors rounded-md hover:bg-muted/50 w-fit"
+          className="w-full rounded-lg border border-dashed border-muted-foreground/20 p-2.5 flex items-center gap-2 text-xs text-muted-foreground/60 hover:border-primary/40 hover:text-foreground/80 hover:bg-muted/20 transition-all group"
         >
-          <Plus className="w-3.5 h-3.5" />
-          Ajouter un sous-ticket
+          <div className="w-5 h-5 rounded-full border border-dashed border-muted-foreground/30 group-hover:border-primary/50 flex items-center justify-center transition-colors shrink-0">
+            <Plus className="w-3 h-3" />
+          </div>
+          Nouveau sous-ticket
         </button>
       )}
     </div>
