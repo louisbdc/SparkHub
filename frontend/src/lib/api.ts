@@ -160,6 +160,25 @@ export const authApi = {
     return data.data!
   },
 
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<ApiResponse<{ message: string }>>(
+      '/auth/forgot-password',
+      { email }
+    )
+    return data.data!
+  },
+
+  resetPassword: async (payload: {
+    accessToken: string
+    newPassword: string
+  }): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<ApiResponse<{ message: string }>>(
+      '/auth/reset-password',
+      payload
+    )
+    return data.data!
+  },
+
   logout: () => {
     Cookies.remove(TOKEN_KEY)
     Cookies.remove(REFRESH_TOKEN_KEY)
@@ -413,6 +432,13 @@ export const messagesApi = {
     const { data } = await apiClient.post<ApiResponse<{ message: Message }>>(
       `/workspaces/${workspaceId}/messages`,
       body
+    )
+    return data.data!.message
+  },
+
+  getById: async (workspaceId: string, messageId: string): Promise<Message> => {
+    const { data } = await apiClient.get<ApiResponse<{ message: Message }>>(
+      `/workspaces/${workspaceId}/messages/${messageId}`
     )
     return data.data!.message
   },
