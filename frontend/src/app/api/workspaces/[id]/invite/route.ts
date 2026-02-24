@@ -64,7 +64,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     // User doesn't exist — send invite email via Supabase Auth
     const host = request.headers.get('host') ?? 'localhost:3000'
     const protocol = host.startsWith('localhost') ? 'http' : 'https'
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${protocol}://${host}`
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? `${protocol}://${host}`).replace(/\/$/, '')
 
     const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: { workspaceId: id, role },

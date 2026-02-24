@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const PUBLIC_ROUTES = ['/login', '/register', '/invite/accept', '/forgot-password', '/reset-password']
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/invite/accept', '/forgot-password', '/reset-password']
 const TOKEN_KEY = 'sparkhub_token'
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // API routes do their own Bearer token validation
@@ -12,7 +12,10 @@ export function proxy(request: NextRequest) {
   }
 
   const token = request.cookies.get(TOKEN_KEY)?.value
-  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
+  // Use exact match for '/' to avoid matching every route (e.g. '/dashboard'.startsWith('/') is true)
+  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+    route === '/' ? pathname === '/' : pathname.startsWith(route)
+  )
 
   if (!token && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url)

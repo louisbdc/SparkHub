@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, role } = parsed.data
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
     // Use the regular signUp flow (not admin) so Supabase sends the confirmation email
     const supabaseAnon = createClient(
