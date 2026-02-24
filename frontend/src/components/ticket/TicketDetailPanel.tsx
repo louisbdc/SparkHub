@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Download, Eye, Loader2, Paperclip, Send } from 'lucide-react'
+import { Download, Loader2, Paperclip, Send } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -143,20 +143,19 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose }: TicketDetail
                     {liveTicket.attachments.map((att) => (
                       <li key={att._id} className="flex items-center gap-2 text-xs">
                         <Paperclip className="w-3 h-3 shrink-0 text-muted-foreground" />
-                        <span className="truncate flex-1 text-foreground/80">{att.originalname}</span>
                         <button
                           type="button"
                           onClick={() => setPreviewAttachment(att)}
-                          className="text-muted-foreground hover:text-foreground"
+                          className="truncate flex-1 text-foreground/80 hover:text-foreground text-left transition-colors"
                           title="Prévisualiser"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          {att.originalname}
                         </button>
                         <a
                           href={filesApi.getUrl(att.fileId, true)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground"
+                          className="shrink-0 text-muted-foreground hover:text-foreground"
                           title="Télécharger"
                         >
                           <Download className="w-3.5 h-3.5" />

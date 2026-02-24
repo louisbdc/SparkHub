@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Eye, FileText, Paperclip } from 'lucide-react'
+import { ArrowUpRight, Download, FileText, Paperclip } from 'lucide-react'
 import { useTickets } from '@/hooks/useTickets'
 import { filesApi } from '@/lib/api'
 import { formatDistanceToNow } from 'date-fns'
@@ -64,7 +64,8 @@ export function WorkspaceFiles({ workspaceId, onTicketClick }: WorkspaceFilesPro
         {files.map(({ attachment, ticket }) => (
           <div
             key={attachment._id}
-            className="flex items-center gap-4 px-4 py-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors group"
+            onClick={() => setPreviewAttachment(attachment)}
+            className="flex items-center gap-4 px-4 py-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors group cursor-pointer"
           >
             <div className="flex items-center justify-center w-9 h-9 rounded-md bg-muted shrink-0">
               <FileText className="w-4 h-4 text-muted-foreground" />
@@ -75,10 +76,11 @@ export function WorkspaceFiles({ workspaceId, onTicketClick }: WorkspaceFilesPro
               <div className="flex items-center gap-2 mt-0.5">
                 <button
                   type="button"
-                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors truncate"
-                  onClick={() => onTicketClick(ticket)}
+                  className="flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors truncate"
+                  onClick={(e) => { e.stopPropagation(); onTicketClick(ticket) }}
                 >
                   {ticket.title}
+                  <ArrowUpRight className="w-3 h-3 shrink-0" />
                 </button>
                 <span className="text-[11px] text-muted-foreground/50">·</span>
                 <span className="text-[11px] text-muted-foreground shrink-0">
@@ -95,18 +97,11 @@ export function WorkspaceFiles({ workspaceId, onTicketClick }: WorkspaceFilesPro
             </div>
 
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-              <button
-                type="button"
-                onClick={() => setPreviewAttachment(attachment)}
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Prévisualiser"
-              >
-                <Eye className="w-4 h-4" />
-              </button>
               <a
                 href={filesApi.getUrl(attachment._id, true)}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 title="Télécharger"
               >
