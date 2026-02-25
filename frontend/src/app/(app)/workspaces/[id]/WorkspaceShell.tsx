@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { WorkspaceProvider, useWorkspaceContext } from './WorkspaceContext'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { useMobileSidebar } from '@/components/layout/AppShell'
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { ticketsApi } from '@/lib/api'
@@ -42,6 +43,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { selectedTicket, setSelectedTicket, editOnOpen, clearEditOnOpen } = useWorkspaceContext()
   const queryClient = useQueryClient()
   const mobileSidebar = useMobileSidebar()
+
+  const isOnDiscussion = pathname.startsWith(`/workspaces/${id}/discussion`)
+  const { count: unreadMessages } = useUnreadMessages(id, isOnDiscussion)
 
   // Open ticket panel when navigating from a notification (?ticket=xxx)
   const ticketIdParam = searchParams.get('ticket')
@@ -148,7 +152,12 @@ function Shell({ children }: { children: React.ReactNode }) {
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <span className="relative">
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {segment === 'discussion' && unreadMessages > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500" />
+                  )}
+                </span>
                 {label}
               </Link>
             )
@@ -177,7 +186,12 @@ function Shell({ children }: { children: React.ReactNode }) {
                       : 'text-muted-foreground'
                   )}
                 >
-                  <Icon className="w-5 h-5 shrink-0" />
+                  <span className="relative">
+                    <Icon className="w-5 h-5 shrink-0" />
+                    {segment === 'discussion' && unreadMessages > 0 && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-500" />
+                    )}
+                  </span>
                   {label}
                 </Link>
               )

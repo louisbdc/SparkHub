@@ -77,6 +77,14 @@ create table if not exists messages (
   updated_at   timestamptz not null default now()
 );
 
+-- ── Message reads ─────────────────────────────────────────────────────────────
+create table if not exists message_reads (
+  user_id      uuid not null references profiles(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  last_read_at timestamptz not null default now(),
+  primary key (user_id, workspace_id)
+);
+
 -- ── Attachments ───────────────────────────────────────────────────────────────
 create table if not exists attachments (
   id           uuid primary key default gen_random_uuid(),
@@ -159,6 +167,7 @@ alter table comments          disable row level security;
 alter table messages          disable row level security;
 alter table attachments       disable row level security;
 alter table notifications     disable row level security;
+alter table message_reads     disable row level security;
 
 -- ── Indexes ───────────────────────────────────────────────────────────────────
 create index if not exists idx_workspace_members_user on workspace_members(user_id);
@@ -169,3 +178,4 @@ create index if not exists idx_comments_ticket         on comments(ticket_id);
 create index if not exists idx_messages_workspace      on messages(workspace_id, created_at);
 create index if not exists idx_attachments_ticket      on attachments(ticket_id);
 create index if not exists idx_notifications_user      on notifications(user_id, is_read, created_at desc);
+create index if not exists idx_message_reads_user      on message_reads(user_id, workspace_id);

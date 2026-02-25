@@ -17,6 +17,8 @@ import {
 } from '@/hooks/useMessages'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { useWorkspaceSocket } from '@/hooks/useWorkspaceSocket'
+import { useQueryClient } from '@tanstack/react-query'
+import { messagesApi } from '@/lib/api'
 import type { Message } from '@/types'
 
 const TYPING_DEBOUNCE_MS = 1500
@@ -50,6 +52,14 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
     workspaceId,
     currentUser?._id
   )
+
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    messagesApi.markAsRead(workspaceId).then(() => {
+      queryClient.setQueryData(['messages', 'unread', workspaceId], { count: 0 })
+    }).catch(() => {})
+  }, [workspaceId, queryClient])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

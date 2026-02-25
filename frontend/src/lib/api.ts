@@ -484,6 +484,17 @@ export const messagesApi = {
   delete: async (workspaceId: string, messageId: string): Promise<void> => {
     await apiClient.delete(`/workspaces/${workspaceId}/messages/${messageId}`)
   },
+
+  getUnreadCount: async (workspaceId: string): Promise<{ count: number }> => {
+    const { data } = await apiClient.get<ApiResponse<{ count: number }>>(
+      `/workspaces/${workspaceId}/messages/read`
+    )
+    return data.data!
+  },
+
+  markAsRead: async (workspaceId: string): Promise<void> => {
+    await apiClient.post(`/workspaces/${workspaceId}/messages/read`, {})
+  },
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
