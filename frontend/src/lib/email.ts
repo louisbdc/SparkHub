@@ -33,7 +33,16 @@ export async function sendTicketAssignedEmail(
           <!-- Header -->
           <tr>
             <td style="background:#09090b;border-radius:16px 16px 0 0;padding:28px 40px;text-align:center;">
-              <span style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">⚡ Sparkhub</span>
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <img src="${appUrl}/logo_sparkhub.png" width="32" height="32" alt="Sparkhub" style="display:block;border-radius:8px;" />
+                  </td>
+                  <td style="padding-left:10px;vertical-align:middle;">
+                    <span style="font-size:15px;font-weight:600;color:#ffffff;letter-spacing:-0.01em;">Sparkhub</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
