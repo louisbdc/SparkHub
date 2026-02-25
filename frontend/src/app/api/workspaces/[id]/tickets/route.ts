@@ -7,6 +7,7 @@ import { isWorkspaceMemberOrOwner } from '@/lib/workspace-queries'
 import { mapTicket } from '@/lib/db-mappers'
 import { uploadFile } from '@/lib/file-upload'
 import { createNotification } from '@/lib/notifications'
+import { sendTicketAssignedEmail } from '@/lib/email'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -189,6 +190,15 @@ export async function POST(request: NextRequest, { params }: Params) {
         `Vous avez été assigné au ticket "${title}"`,
         ticketLink
       )
+      if (ticket.assignee?.email) {
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://sparkhub.fr').replace(/\/$/, '')
+        await sendTicketAssignedEmail(
+          ticket.assignee.email,
+          ticket.assignee.name,
+          title,
+          `${appUrl}${ticketLink}`
+        )
+      }
     }
 
     return sendSuccess({ ticket: mapTicket(ticket) }, 201)

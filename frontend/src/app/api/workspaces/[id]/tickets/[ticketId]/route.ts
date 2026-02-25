@@ -7,6 +7,7 @@ import { isWorkspaceMemberOrOwner } from '@/lib/workspace-queries'
 import { mapTicket } from '@/lib/db-mappers'
 import { uploadFile } from '@/lib/file-upload'
 import { createNotification } from '@/lib/notifications'
+import { sendTicketAssignedEmail } from '@/lib/email'
 
 type Params = { params: Promise<{ id: string; ticketId: string }> }
 
@@ -128,13 +129,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       newAssigneeId !== existing.assignee_id &&
       newAssigneeId !== userId
     ) {
+      const ticketLink = `/workspaces/${id}/kanban?ticket=${ticketId}`
       await createNotification(
         newAssigneeId,
         'ticket_assigned',
         'Ticket assigné',
         `Vous avez été assigné au ticket "${existing.title}"`,
-        `/workspaces/${id}/kanban?ticket=${ticketId}`
+        ticketLink
       )
+      if (ticket?.assignee?.email) {
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://sparkhub.fr').replace(/\/$/, '')
+        await sendTicketAssignedEmail(
+          ticket.assignee.email,
+          ticket.assignee.name,
+          existing.title,
+          `${appUrl}${ticketLink}`
+        )
+      }
     }
 
     return sendSuccess({ ticket: mapTicket(ticket!) })
