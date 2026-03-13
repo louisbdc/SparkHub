@@ -21,6 +21,13 @@ export interface WorkspaceMember {
   joinedAt: string
 }
 
+export interface PendingInvitation {
+  _id: string
+  email: string
+  role: UserRole
+  invitedAt: string
+}
+
 export interface Workspace {
   _id: string
   name: string
@@ -29,6 +36,7 @@ export interface Workspace {
   color: string
   owner: User
   members: WorkspaceMember[]
+  pendingInvitations: PendingInvitation[]
   memberCount: number
   isArchived: boolean
   createdAt: string

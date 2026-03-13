@@ -38,6 +38,17 @@ create table if not exists workspace_members (
   unique (workspace_id, user_id)
 );
 
+-- ── Workspace invitations (pending — deleted on accept/cancel) ───────────────
+create table if not exists workspace_invitations (
+  id           uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  email        text not null,
+  role         text not null default 'client' check (role in ('admin', 'dev', 'client')),
+  invited_by   uuid not null references profiles(id) on delete cascade,
+  invited_at   timestamptz not null default now(),
+  unique (workspace_id, email)
+);
+
 -- ── Tickets ───────────────────────────────────────────────────────────────────
 create table if not exists tickets (
   id           uuid primary key default gen_random_uuid(),
@@ -167,7 +178,8 @@ alter table comments          disable row level security;
 alter table messages          disable row level security;
 alter table attachments       disable row level security;
 alter table notifications     disable row level security;
-alter table message_reads     disable row level security;
+alter table message_reads            disable row level security;
+alter table workspace_invitations    disable row level security;
 
 -- ── Indexes ───────────────────────────────────────────────────────────────────
 create index if not exists idx_workspace_members_user on workspace_members(user_id);
@@ -179,3 +191,5 @@ create index if not exists idx_messages_workspace      on messages(workspace_id,
 create index if not exists idx_attachments_ticket      on attachments(ticket_id);
 create index if not exists idx_notifications_user      on notifications(user_id, is_read, created_at desc);
 create index if not exists idx_message_reads_user      on message_reads(user_id, workspace_id);
+create index if not exists idx_workspace_invitations_ws    on workspace_invitations(workspace_id);
+create index if not exists idx_workspace_invitations_email on workspace_invitations(email);

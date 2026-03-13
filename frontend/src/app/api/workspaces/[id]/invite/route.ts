@@ -79,8 +79,20 @@ export async function POST(request: NextRequest, { params }: Params) {
       return sendError(msg, 500)
     }
 
+    // Track the pending invitation
+    const { error: invUpsertError } = await supabaseAdmin
+      .from('workspace_invitations')
+      .upsert(
+        { workspace_id: id, email, role, invited_by: userId },
+        { onConflict: 'workspace_id,email' }
+      )
+    if (invUpsertError) {
+      console.error('[invite] workspace_invitations upsert error:', invUpsertError)
+    }
+
+    const updated = await fetchWorkspace(id)
     return sendSuccess({
-      workspace,
+      workspace: updated,
       invitedUser: { name: email, email },
       status: 'invited' as const,
     })

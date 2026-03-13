@@ -85,6 +85,24 @@ export function useRemoveMember() {
   })
 }
 
+export function useCancelInvitation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      invitationId,
+    }: {
+      workspaceId: string
+      invitationId: string
+    }) => workspacesApi.cancelInvitation(workspaceId, invitationId),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Workspace>(['workspaces', updated._id], updated)
+      queryClient.invalidateQueries({ queryKey: ['workspaces', updated._id] })
+    },
+  })
+}
+
 export function useArchiveWorkspace() {
   const queryClient = useQueryClient()
   const router = useRouter()

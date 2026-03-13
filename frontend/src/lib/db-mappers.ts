@@ -10,6 +10,7 @@ import type {
   MessageReply,
   Notification,
   NotificationType,
+  PendingInvitation,
   Ticket,
   User,
   Workspace,
@@ -29,6 +30,15 @@ export interface DbProfile {
   updated_at: string
 }
 
+export interface DbWorkspaceInvitation {
+  id: string
+  workspace_id: string
+  email: string
+  role: 'admin' | 'dev' | 'client'
+  invited_by: string
+  invited_at: string
+}
+
 export interface DbWorkspace {
   id: string
   name: string
@@ -41,6 +51,7 @@ export interface DbWorkspace {
   updated_at: string
   owner: DbProfile
   members: DbWorkspaceMember[]
+  invitations: DbWorkspaceInvitation[]
 }
 
 export interface DbWorkspaceMember {
@@ -135,6 +146,15 @@ export function mapProfile(row: DbProfile): User {
   }
 }
 
+export function mapPendingInvitation(row: DbWorkspaceInvitation): PendingInvitation {
+  return {
+    _id: row.id,
+    email: row.email,
+    role: row.role,
+    invitedAt: row.invited_at,
+  }
+}
+
 export function mapWorkspace(row: DbWorkspace): Workspace {
   return {
     _id: row.id,
@@ -144,6 +164,7 @@ export function mapWorkspace(row: DbWorkspace): Workspace {
     color: row.color,
     owner: mapProfile(row.owner),
     members: row.members.map(mapWorkspaceMember),
+    pendingInvitations: (row.invitations ?? []).map(mapPendingInvitation),
     memberCount: row.members.length,
     isArchived: row.is_archived,
     createdAt: row.created_at,

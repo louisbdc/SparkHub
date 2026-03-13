@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError || !profile) return sendError('Erreur lors de la création du profil', 500)
 
-    // Add to workspace
+    // Add to workspace and remove pending invitation
     if (workspaceId) {
       const { error: memberError } = await supabaseAdmin
         .from('workspace_members')
@@ -54,6 +54,17 @@ export async function POST(request: NextRequest) {
           { onConflict: 'workspace_id,user_id' }
         )
       if (memberError) console.error('[invite/accept] workspace_members upsert error:', memberError)
+
+      if (user.email) {
+        const { error: delInvError } = await supabaseAdmin
+          .from('workspace_invitations')
+          .delete()
+          .eq('workspace_id', workspaceId)
+          .eq('email', user.email)
+        if (delInvError) {
+          console.error('[invite/accept] workspace_invitations delete error:', delInvError)
+        }
+      }
     }
 
     // Sign in with the new password to get a fresh session

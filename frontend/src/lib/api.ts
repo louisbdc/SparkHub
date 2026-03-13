@@ -272,6 +272,13 @@ export const workspacesApi = {
     >(`/workspaces/${workspaceId}/invite`, payload)
     return data.data!
   },
+
+  cancelInvitation: async (workspaceId: string, invitationId: string): Promise<Workspace> => {
+    const { data } = await apiClient.delete<ApiResponse<{ workspace: Workspace }>>(
+      `/workspaces/${workspaceId}/invitations/${invitationId}`
+    )
+    return data.data!.workspace
+  },
 }
 
 // ── Tickets ──────────────────────────────────────────────────────────────────

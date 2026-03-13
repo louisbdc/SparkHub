@@ -9,7 +9,8 @@ import type { Workspace } from '@/types'
 export const WORKSPACE_SELECT = `
   *,
   owner:profiles!workspaces_owner_id_fkey(*),
-  members:workspace_members(id, role, joined_at, user:profiles(*))
+  members:workspace_members(id, role, joined_at, user:profiles(*)),
+  invitations:workspace_invitations(id, email, role, invited_by, invited_at)
 `
 
 export async function fetchWorkspace(workspaceId: string): Promise<Workspace | null> {

@@ -55,6 +55,7 @@ export default function WorkspaceSettingsPage() {
   const isOwner = workspace.owner._id === currentUser?._id
   const canInvite = isOwner
   const totalMembers = workspace.members.length + 1
+  const pendingCount = workspace.pendingInvitations.length
 
   return (
     <div className="flex flex-col h-full">
@@ -91,7 +92,7 @@ export default function WorkspaceSettingsPage() {
           )}
 
           <SettingCard
-            title={`Membres · ${totalMembers}`}
+            title={`Membres · ${totalMembers}${pendingCount > 0 ? ` (+ ${pendingCount} en attente)` : ''}`}
             description="Gérez qui a accès à ce workspace."
             action={canInvite ? <InviteMemberDialog workspaceId={id} /> : undefined}
           >
