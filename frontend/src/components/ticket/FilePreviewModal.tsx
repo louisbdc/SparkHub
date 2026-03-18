@@ -47,7 +47,7 @@ export function FilePreviewModal({ attachment, onClose }: FilePreviewModalProps)
 
   return (
     <Dialog open={Boolean(attachment)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] flex flex-col">
+      <DialogContent className="!max-w-[95vw] !w-[95vw] !max-h-[95vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-base font-medium truncate pr-8">
             {attachment?.originalname}
