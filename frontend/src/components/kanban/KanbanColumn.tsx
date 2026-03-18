@@ -34,9 +34,9 @@ export function KanbanColumn({
   const rootTickets = tickets.filter((t) => !t.parentId)
 
   return (
-    <div className="flex flex-col w-[85vw] sm:w-72 shrink-0 h-full snap-center">
+    <div className="flex flex-col w-[85vw] sm:w-72 shrink-0 h-full min-h-0 snap-center">
       {/* Column header */}
-      <div className="flex items-center gap-2 mb-3 px-1">
+      <div className="flex items-center gap-2 mb-3 px-1 shrink-0">
         <div className={cn('w-2 h-2 rounded-full', style.dot)} />
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
@@ -50,7 +50,7 @@ export function KanbanColumn({
         <div
           ref={setNodeRef}
           className={cn(
-            'flex flex-col gap-2 flex-1 rounded-xl p-2 min-h-[200px] transition-colors',
+            'flex flex-col gap-2 flex-1 rounded-xl p-2 min-h-0 overflow-y-auto transition-colors',
             isOver ? 'bg-primary/5 border-2 border-dashed border-primary/30' : 'bg-muted/30'
           )}
         >

@@ -208,7 +208,7 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 p-4 sm:p-6 overflow-x-auto flex-1 snap-x snap-mandatory">
+          <div className="flex gap-4 p-4 sm:p-6 overflow-x-auto flex-1 min-h-0 snap-x snap-mandatory">
             {TICKET_STATUSES.map((status) => (
               <KanbanColumn
                 key={status}
