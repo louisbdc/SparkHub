@@ -133,7 +133,7 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
   return (
     <>
     <Sheet open={Boolean(ticket)} onOpenChange={handleSheetOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl flex flex-col gap-0 p-0 overflow-hidden">
+      <SheetContent className="!w-full sm:!max-w-xl flex flex-col gap-0 p-0 overflow-hidden">
         {liveTicket && (
           <>
             {/* Header */}
