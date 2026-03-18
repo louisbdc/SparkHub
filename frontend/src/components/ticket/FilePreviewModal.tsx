@@ -47,14 +47,14 @@ export function FilePreviewModal({ attachment, onClose }: FilePreviewModalProps)
 
   return (
     <Dialog open={Boolean(attachment)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl w-full">
+      <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-sm font-medium truncate pr-8">
+          <DialogTitle className="text-base font-medium truncate pr-8">
             {attachment?.originalname}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="min-h-[300px] flex items-center justify-center">
+        <div className="min-h-[400px] flex-1 flex items-center justify-center overflow-auto">
           {loading && (
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           )}
@@ -69,13 +69,13 @@ export function FilePreviewModal({ attachment, onClose }: FilePreviewModalProps)
                 <img
                   src={signedUrl}
                   alt={attachment.originalname}
-                  className="max-w-full max-h-[65vh] object-contain rounded-md"
+                  className="max-w-full max-h-[80vh] object-contain rounded-md"
                 />
               )}
               {isPdf(attachment.mimeType) && (
                 <iframe
                   src={signedUrl}
-                  className="w-full h-[65vh] rounded-md border"
+                  className="w-full h-[80vh] rounded-md border"
                   title={attachment.originalname}
                 />
               )}
