@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { MarkdownTextarea } from '@/components/ui/MarkdownTextarea'
 import {
   Select,
   SelectContent,
@@ -58,6 +58,7 @@ export function EditTicketForm({ ticket, workspaceId, members, onSuccess, onCanc
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -92,7 +93,13 @@ export function EditTicketForm({ ticket, workspaceId, members, onSuccess, onCanc
       {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="edit-description">Description</Label>
-        <Textarea id="edit-description" rows={4} {...register('description')} />
+        <MarkdownTextarea
+          id="edit-description"
+          rows={6}
+          placeholder="Décrivez le ticket... (Markdown supporté)"
+          value={watch('description') ?? ''}
+          {...register('description')}
+        />
       </div>
 
       {/* Status + Priority */}

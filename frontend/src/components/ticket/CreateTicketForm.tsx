@@ -8,7 +8,7 @@ import { Loader2, Paperclip, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { MarkdownTextarea } from '@/components/ui/MarkdownTextarea'
 import {
   Select,
   SelectContent,
@@ -65,6 +65,7 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
     reset,
   } = useForm<FormValues>({
@@ -122,10 +123,11 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
       {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
-        <Textarea
+        <MarkdownTextarea
           id="description"
-          placeholder="Décrivez le problème ou la demande..."
-          rows={4}
+          placeholder="Décrivez le problème ou la demande... (Markdown supporté)"
+          rows={6}
+          value={watch('description') ?? ''}
           {...register('description')}
         />
         {errors.description && (

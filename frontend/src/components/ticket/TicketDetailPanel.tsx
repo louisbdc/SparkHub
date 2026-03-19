@@ -22,6 +22,7 @@ import { useAddAttachments, useChildTickets, useTickets } from '@/hooks/useTicke
 import { useWorkspaceMembers } from '@/hooks/useWorkspaceMembers'
 import { useTicketSocket } from '@/hooks/useTicketSocket'
 import { filesApi } from '@/lib/api'
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 import { FilePreviewModal } from './FilePreviewModal'
 import { SubTicketsList } from './SubTicketsList'
 import { EditTicketForm } from './EditTicketForm'
@@ -180,9 +181,7 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                         Description
                       </p>
-                      <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                        {liveTicket.description}
-                      </p>
+                      <MarkdownRenderer content={liveTicket.description} />
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">Aucune description</p>
