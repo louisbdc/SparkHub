@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { MarkdownTextarea } from '@/components/ui/MarkdownTextarea'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_TYPE_LABELS,
@@ -185,12 +186,11 @@ export function SubTicketsList({ workspaceId, parentId, members = [], onTicketCl
 
           {/* Description */}
           <div className="px-3 pb-2">
-            <textarea
+            <MarkdownTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description (optionnelle)…"
-              rows={2}
-              className="w-full text-xs bg-transparent outline-none placeholder:text-muted-foreground/40 resize-none min-w-0 leading-relaxed"
+              placeholder="Description (optionnelle, Markdown supporté)…"
+              rows={3}
               onKeyDown={(e) => { if (e.key === 'Escape') resetForm() }}
             />
           </div>
