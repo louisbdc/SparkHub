@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { TicketDetailPanel } from '@/components/ticket/TicketDetailPanel'
 import { CreateTicketForm } from '@/components/ticket/CreateTicketForm'
 import { InviteMemberDialog } from '@/components/workspace/InviteMemberDialog'
-import { useWorkspace } from '@/hooks/useWorkspaces'
+import { useWorkspace, useUpdateWorkspace } from '@/hooks/useWorkspaces'
 import { useCurrentUser } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +18,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { WorkspaceProvider, useWorkspaceContext } from './WorkspaceContext'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 import { useMobileSidebar } from '@/components/layout/AppShell'
@@ -25,6 +30,11 @@ import { NotificationBell } from '@/components/layout/NotificationBell'
 import { ticketsApi } from '@/lib/api'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Ticket } from '@/types'
+
+const PRESET_COLORS = [
+  '#000000', '#6366f1', '#8b5cf6', '#ec4899',
+  '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
+]
 
 const NAV_ITEMS = [
   { segment: 'kanban', icon: LayoutGrid, label: 'Kanban' },
@@ -40,6 +50,8 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { data: workspace } = useWorkspace(id)
   const { data: user } = useCurrentUser()
   const [createOpen, setCreateOpen] = useState(false)
+  const [colorOpen, setColorOpen] = useState(false)
+  const updateWorkspace = useUpdateWorkspace()
   const { selectedTicket, setSelectedTicket, editOnOpen, clearEditOnOpen } = useWorkspaceContext()
   const queryClient = useQueryClient()
   const mobileSidebar = useMobileSidebar()
@@ -90,10 +102,36 @@ function Shell({ children }: { children: React.ReactNode }) {
 
         {workspace && (
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <div
-              className="w-3 h-3 rounded-full shrink-0"
-              style={{ backgroundColor: workspace.color }}
-            />
+            <Popover open={colorOpen} onOpenChange={setColorOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className="w-3 h-3 rounded-full shrink-0 hover:opacity-80 transition-opacity"
+                  style={{ backgroundColor: workspace.color }}
+                  aria-label="Changer la couleur du workspace"
+                />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="start">
+                <div className="flex gap-1.5 flex-wrap max-w-[140px]">
+                  {PRESET_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => {
+                        updateWorkspace.mutate({ workspaceId: id, payload: { color } })
+                        setColorOpen(false)
+                      }}
+                      className="w-5 h-5 rounded-full hover:scale-110 transition-transform shrink-0"
+                      style={{
+                        backgroundColor: color,
+                        outline: workspace.color === color ? `2px solid ${color}` : 'none',
+                        outlineOffset: '2px',
+                        border: color === '#000000' ? '1px solid hsl(var(--border))' : 'none',
+                      }}
+                      aria-label={color}
+                    />
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
             <h1 className="font-semibold text-sm truncate">{workspace.name}</h1>
           </div>
         )}

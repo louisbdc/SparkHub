@@ -9,7 +9,7 @@ import { fetchWorkspace, listWorkspacesForUser } from '@/lib/workspace-queries'
 const createSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional().default(''),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().default('#6366f1'),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().default('#000000'),
 })
 
 // GET /api/workspaces — list workspaces for current user
