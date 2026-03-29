@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { requireAuth } from '@/lib/auth-guard'
 import { isWorkspaceMemberOrOwner, listWorkspacesForUser, fetchWorkspace } from '@/lib/workspace-queries'
 import { mapTicket, mapComment } from '@/lib/db-mappers'
 import { createNotification } from '@/lib/notifications'
@@ -10,6 +9,8 @@ import { createNotification } from '@/lib/notifications'
 
 const SERVER_INFO = { name: 'sparkhub', version: '1.0.0' }
 const PROTOCOL_VERSION = '2024-11-05'
+const MCP_API_KEY = process.env.MCP_API_KEY
+const MCP_USER_ID = process.env.MCP_USER_ID
 
 const TICKET_SELECT = `
   *,
@@ -393,8 +394,15 @@ export async function POST(request: NextRequest) {
       return jsonRpcResult(body.id, {})
     }
 
-    // All other methods require auth
-    const { userId } = await requireAuth(request)
+    // All other methods require API key auth
+    const authHeader = request.headers.get('authorization') ?? ''
+    const providedKey = authHeader.replace('Bearer ', '')
+
+    if (!MCP_API_KEY || !MCP_USER_ID || providedKey !== MCP_API_KEY) {
+      return jsonRpcError(body.id, -32600, 'Cle API MCP invalide')
+    }
+
+    const userId = MCP_USER_ID
 
     if (body.method === 'tools/list') {
       return jsonRpcResult(body.id, { tools: TOOLS })
@@ -414,8 +422,7 @@ export async function POST(request: NextRequest) {
     }
 
     return jsonRpcError(body.id, -32601, `Methode inconnue: ${body.method}`)
-  } catch (e) {
-    if (e instanceof Response) return e
+  } catch {
     return jsonRpcError(undefined, -32603, 'Erreur serveur interne')
   }
 }
