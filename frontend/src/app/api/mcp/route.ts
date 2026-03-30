@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { isWorkspaceMemberOrOwner, listWorkspacesForUser, fetchWorkspace } from '@/lib/workspace-queries'
-import { mapTicket, mapComment } from '@/lib/db-mappers'
+import { mapTicket, mapComment, mapAttachment } from '@/lib/db-mappers'
 import { createNotification } from '@/lib/notifications'
+import { createSignedUrl } from '@/lib/file-upload'
 
 // --- Constants ---
 
@@ -106,6 +107,31 @@ const TOOLS = [
     },
   },
   {
+    name: 'list_attachments',
+    description: 'Lister les pieces jointes d\'un ticket. Retourne le nom, type MIME, taille et ID de chaque fichier.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspaceId: { type: 'string', description: 'ID du workspace' },
+        ticketId: { type: 'string', description: 'ID du ticket' },
+      },
+      required: ['workspaceId', 'ticketId'],
+    },
+  },
+  {
+    name: 'get_attachment',
+    description: 'Lire le contenu d\'une piece jointe. Pour les fichiers texte (code, markdown, JSON, CSV, etc.), retourne le contenu. Pour les fichiers binaires (images, PDF, etc.), retourne les metadonnees et une URL signee de telechargement.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspaceId: { type: 'string', description: 'ID du workspace' },
+        ticketId: { type: 'string', description: 'ID du ticket' },
+        attachmentId: { type: 'string', description: 'ID de la piece jointe' },
+      },
+      required: ['workspaceId', 'ticketId', 'attachmentId'],
+    },
+  },
+  {
     name: 'add_comment',
     description: 'Ajouter un commentaire sur un ticket.',
     inputSchema: {
@@ -144,6 +170,8 @@ const updateTicketStatusSchema = z.object({
   ticketId: z.string(),
   status: z.enum(['backlog', 'todo', 'in_progress', 'review', 'done']),
 })
+const listAttachmentsSchema = z.object({ workspaceId: z.string(), ticketId: z.string() })
+const getAttachmentSchema = z.object({ workspaceId: z.string(), ticketId: z.string(), attachmentId: z.string() })
 const addCommentSchema = z.object({
   workspaceId: z.string(),
   ticketId: z.string(),
@@ -321,6 +349,59 @@ async function executeTool(name: string, args: Record<string, unknown>, userId: 
       }
 
       return textContent(JSON.stringify(mapTicket(ticket), null, 2))
+    }
+
+    case 'list_attachments': {
+      const { workspaceId, ticketId } = listAttachmentsSchema.parse(args)
+      const allowed = await isWorkspaceMemberOrOwner(workspaceId, userId)
+      if (!allowed) return textContent('Acces refuse a ce workspace')
+
+      const { data: attachments, error } = await supabaseAdmin
+        .from('attachments')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('uploaded_at', { ascending: true })
+
+      if (error) return textContent('Erreur lors de la recuperation des pieces jointes')
+      if (!attachments?.length) return textContent('Aucune piece jointe sur ce ticket.')
+
+      return textContent(JSON.stringify(attachments.map(mapAttachment), null, 2))
+    }
+
+    case 'get_attachment': {
+      const { workspaceId, ticketId, attachmentId } = getAttachmentSchema.parse(args)
+      const allowed = await isWorkspaceMemberOrOwner(workspaceId, userId)
+      if (!allowed) return textContent('Acces refuse a ce workspace')
+
+      const { data: attachment, error } = await supabaseAdmin
+        .from('attachments')
+        .select('*')
+        .eq('id', attachmentId)
+        .eq('ticket_id', ticketId)
+        .single()
+
+      if (error || !attachment) return textContent('Piece jointe introuvable.')
+
+      const mapped = mapAttachment(attachment)
+      const isText = /^(text\/|application\/(json|xml|javascript|typescript|x-yaml|x-sh|csv|markdown))/.test(mapped.mimeType)
+
+      if (isText) {
+        const signedUrl = await createSignedUrl(attachment.storage_key, 60)
+        const res = await fetch(signedUrl)
+        if (!res.ok) return textContent(`Erreur lors du telechargement: ${res.status} ${res.statusText}`)
+        const content = await res.text()
+        return textContent(
+          `# ${mapped.originalname}\n\nType: ${mapped.mimeType}\nTaille: ${mapped.size} octets\n\n---\n\n${content}`
+        )
+      }
+
+      const downloadUrl = await createSignedUrl(attachment.storage_key, 300)
+      return textContent(JSON.stringify({
+        filename: mapped.originalname,
+        mimeType: mapped.mimeType,
+        size: mapped.size,
+        downloadUrl,
+      }, null, 2))
     }
 
     case 'add_comment': {
