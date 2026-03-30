@@ -1,10 +1,10 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
+import { Check, Copy, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -28,6 +28,15 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: ticket._id })
   const skipClick = useRef(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(ticket._id)
+    setCopied(true)
+    skipClick.current = true
+    setTimeout(() => { skipClick.current = false }, 0)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -78,6 +87,14 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
               <DropdownMenuSeparator />
             </>
           )}
+          <DropdownMenuItem
+            className="gap-2 cursor-pointer"
+            onSelect={handleCopyId}
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? 'Copié !' : 'Copier l\'ID'}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-destructive focus:text-destructive gap-2 cursor-pointer"
             onSelect={() => {

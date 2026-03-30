@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { ChevronLeft, Download, Loader2, Paperclip, Send } from 'lucide-react'
+import { Check, ChevronLeft, Copy, Download, Loader2, Paperclip, Send } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSkeletonVisible } from '@/hooks/useSkeletonVisible'
 import {
@@ -49,6 +49,7 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
   const [comment, setComment] = useState('')
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [copiedId, setCopiedId] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const typingStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isTypingRef = useRef(false)
@@ -124,6 +125,13 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
     }
   }
 
+  const handleCopyId = () => {
+    if (!liveTicket) return
+    navigator.clipboard.writeText(liveTicket._id)
+    setCopiedId(true)
+    setTimeout(() => setCopiedId(false), 2000)
+  }
+
   const handleSheetOpenChange = (open: boolean) => {
     if (!open) {
       setIsEditing(false)
@@ -153,6 +161,14 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
                 <SheetTitle className="flex-1 text-base font-semibold leading-snug">
                   {liveTicket.title}
                 </SheetTitle>
+                <button
+                  type="button"
+                  onClick={handleCopyId}
+                  className="shrink-0 mt-0.5 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  title="Copier l'ID du ticket"
+                >
+                  {copiedId ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
               </div>
               {!isEditing && (
                 <div className="flex flex-wrap gap-1.5 mt-2">

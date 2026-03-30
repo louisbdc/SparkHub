@@ -97,6 +97,17 @@ const updateTicketStatusSchema = z.object({
   status: z.enum(["backlog", "todo", "in_progress", "review", "done"]).describe("Nouveau statut"),
 });
 
+const listAttachmentsSchema = z.object({
+  workspaceId: z.string().describe("ID du workspace"),
+  ticketId: z.string().describe("ID du ticket"),
+});
+
+const getAttachmentSchema = z.object({
+  workspaceId: z.string().describe("ID du workspace"),
+  ticketId: z.string().describe("ID du ticket"),
+  fileId: z.string().describe("ID du fichier (fileId de la piece jointe)"),
+});
+
 const addCommentSchema = z.object({
   workspaceId: z.string().describe("ID du workspace"),
   ticketId: z.string().describe("ID du ticket"),
@@ -196,6 +207,31 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           status: { type: "string", enum: ["backlog", "todo", "in_progress", "review", "done"], description: "Nouveau statut" },
         },
         required: ["workspaceId", "ticketId", "status"],
+      },
+    },
+    {
+      name: "list_attachments",
+      description: "Lister les pieces jointes d'un ticket. Retourne le nom, type MIME, taille et ID de chaque fichier.",
+      inputSchema: {
+        type: "object" as const,
+        properties: {
+          workspaceId: { type: "string", description: "ID du workspace" },
+          ticketId: { type: "string", description: "ID du ticket" },
+        },
+        required: ["workspaceId", "ticketId"],
+      },
+    },
+    {
+      name: "get_attachment",
+      description: "Lire le contenu d'une piece jointe. Pour les fichiers texte (code, markdown, JSON, CSV, etc.), retourne le contenu. Pour les fichiers binaires (images, PDF, etc.), retourne les metadonnees et l'URL de telechargement.",
+      inputSchema: {
+        type: "object" as const,
+        properties: {
+          workspaceId: { type: "string", description: "ID du workspace" },
+          ticketId: { type: "string", description: "ID du ticket" },
+          fileId: { type: "string", description: "ID du fichier (fileId de la piece jointe)" },
+        },
+        required: ["workspaceId", "ticketId", "fileId"],
       },
     },
     {
@@ -301,6 +337,61 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
         if (!res.success) return textContent(formatError(res));
         return textContent(JSON.stringify(res.data?.ticket, null, 2));
+      }
+
+      case "list_attachments": {
+        const { workspaceId, ticketId } = listAttachmentsSchema.parse(args);
+        const res = await apiGet<{ ticket: { attachments: unknown[] } }>(
+          `/api/workspaces/${workspaceId}/tickets/${ticketId}`
+        );
+        if (!res.success) return textContent(formatError(res));
+
+        const attachments = res.data?.ticket?.attachments ?? [];
+        if (attachments.length === 0) {
+          return textContent("Aucune piece jointe sur ce ticket.");
+        }
+        return textContent(JSON.stringify(attachments, null, 2));
+      }
+
+      case "get_attachment": {
+        const { workspaceId, ticketId, fileId } = getAttachmentSchema.parse(args);
+
+        // First get ticket to find attachment metadata
+        const ticketRes = await apiGet<{ ticket: { attachments: Array<{ fileId: string; originalname: string; mimeType: string; size: number }> } }>(
+          `/api/workspaces/${workspaceId}/tickets/${ticketId}`
+        );
+        if (!ticketRes.success) return textContent(formatError(ticketRes));
+
+        const attachment = ticketRes.data?.ticket?.attachments?.find(
+          (a) => a.fileId === fileId
+        );
+        if (!attachment) return textContent("Piece jointe introuvable.");
+
+        const isText = /^(text\/|application\/(json|xml|javascript|typescript|x-yaml|x-sh|csv|markdown))/.test(
+          attachment.mimeType
+        );
+
+        if (isText) {
+          // Fetch raw content for text files
+          const fileRes = await fetch(`${API_URL}/api/files/${fileId}`, {
+            headers: { Authorization: `Bearer ${API_TOKEN}` },
+          });
+          if (!fileRes.ok) {
+            return textContent(`Erreur lors du telechargement: ${fileRes.status} ${fileRes.statusText}`);
+          }
+          const content = await fileRes.text();
+          return textContent(
+            `# ${attachment.originalname}\n\nType: ${attachment.mimeType}\nTaille: ${attachment.size} octets\n\n---\n\n${content}`
+          );
+        }
+
+        // For binary files, return metadata + download URL
+        return textContent(JSON.stringify({
+          filename: attachment.originalname,
+          mimeType: attachment.mimeType,
+          size: attachment.size,
+          downloadUrl: `${API_URL}/api/files/${fileId}?download=1`,
+        }, null, 2));
       }
 
       case "add_comment": {
