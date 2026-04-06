@@ -127,7 +127,10 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
 
         reordered.forEach((ticket, index) => {
           if (ticket.order !== index) {
-            updateTicket.mutate({ ticketId: ticket._id, payload: { order: index } })
+            updateTicket.mutate(
+              { ticketId: ticket._id, payload: { order: index } },
+              { onError: () => refetch() }
+            )
           }
         })
       } else {
@@ -141,10 +144,13 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
           )
         )
 
-        updateTicket.mutate({
-          ticketId: activeId,
-          payload: { status: targetStatus, order: newOrder },
-        })
+        updateTicket.mutate(
+          {
+            ticketId: activeId,
+            payload: { status: targetStatus, order: newOrder },
+          },
+          { onError: () => refetch() }
+        )
       }
     },
     [items, updateTicket]

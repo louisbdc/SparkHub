@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: '%s · Sparkhub',
   },
   description: 'Gestion de tickets et suivi de projet client',
-  metadataBase: new URL('https://sparkhub.app'),
+  metadataBase: new URL('https://sparkhub.fr'),
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Sparkhub',
     description: 'Gestion de tickets et suivi de projet client',
-    url: 'https://sparkhub.app',
+    url: 'https://sparkhub.fr',
     siteName: 'Sparkhub',
     images: [{ url: '/og-image.png', width: 1200, height: 1200, alt: 'Sparkhub' }],
     locale: 'fr_FR',

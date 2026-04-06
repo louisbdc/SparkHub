@@ -101,7 +101,11 @@ apiClient.interceptors.response.use(
           pendingRequests.forEach((cb) => cb(newToken))
           pendingRequests = []
 
-          originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
+          if (originalRequest.headers && typeof originalRequest.headers.set === 'function') {
+            originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
+          } else {
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+          }
           return apiClient(originalRequest)
         } catch {
           refreshFailures += 1
