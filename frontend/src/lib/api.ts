@@ -96,6 +96,7 @@ apiClient.interceptors.response.use(
           Cookies.set(TOKEN_KEY, newToken)
           Cookies.set(REFRESH_TOKEN_KEY, newRefresh)
           refreshFailures = 0
+          refreshCooldownUntil = 0
 
           // Replay queued requests
           pendingRequests.forEach((cb) => cb(newToken))
@@ -114,12 +115,14 @@ apiClient.interceptors.response.use(
           Cookies.remove(TOKEN_KEY)
           Cookies.remove(REFRESH_TOKEN_KEY)
           redirectToLogin()
+          return Promise.reject(new Error('Session expirée'))
         } finally {
           isRefreshing = false
         }
       } else {
         Cookies.remove(TOKEN_KEY)
         redirectToLogin()
+        return Promise.reject(new Error('Session expirée'))
       }
     }
 

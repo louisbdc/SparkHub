@@ -5,13 +5,19 @@ import { TOKEN_KEY } from './api'
 let socket: Socket | null = null
 
 export function getSocket(): Socket {
+  if (socket && !socket.connected && !socket.active) {
+    // Socket exhausted reconnection attempts — recreate it
+    socket.removeAllListeners()
+    socket = null
+  }
+
   if (!socket) {
     socket = io(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000', {
       auth: (cb) => cb({ token: Cookies.get(TOKEN_KEY) }),
       autoConnect: true,
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1_000,
       reconnectionDelayMax: 30_000,
       timeout: 10_000,
