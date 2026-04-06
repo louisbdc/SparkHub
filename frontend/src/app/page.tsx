@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, type RefObject } from 'react'
+import Link from 'next/link'
 import {
   MessageSquare,
   LayoutGrid,
@@ -157,20 +158,47 @@ function CTAButton({
   children,
   variant = 'primary',
   className = '',
+  href,
+  onClick,
 }: {
   children: React.ReactNode
   variant?: 'primary' | 'secondary'
   className?: string
+  href?: string
+  onClick?: () => void
 }) {
-  const base = 'relative overflow-hidden rounded-xl px-8 py-4 font-bold uppercase tracking-wider text-xs transition-all active:scale-[0.97] shimmer-hover group cursor-pointer'
+  const base = 'relative overflow-hidden rounded-xl px-8 py-4 font-bold uppercase tracking-wider text-xs transition-all active:scale-[0.97] shimmer-hover group cursor-pointer inline-block text-center'
   const styles = {
     primary:   'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900',
     secondary: 'bg-transparent border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white backdrop-blur-sm hover:bg-zinc-50 dark:hover:bg-white/5',
   }
-  return (
-    <button className={`${base} ${styles[variant]} ${className}`}>
+  const content = (
+    <>
       <span className="relative z-10 flex items-center justify-center gap-2">{children}</span>
       <div className="shimmer-bar absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full z-0" />
+    </>
+  )
+
+  if (href) {
+    // Liens externes ou mailto
+    if (href.startsWith('http') || href.startsWith('mailto:')) {
+      return (
+        <a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener noreferrer' : undefined} className={`${base} ${styles[variant]} ${className}`}>
+          {content}
+        </a>
+      )
+    }
+    // Liens internes via Next.js Link
+    return (
+      <Link href={href} className={`${base} ${styles[variant]} ${className}`}>
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <button onClick={onClick} className={`${base} ${styles[variant]} ${className}`}>
+      {content}
     </button>
   )
 }
@@ -437,7 +465,7 @@ export default function LandingPage() {
             <a href="/login" className="hidden sm:block font-geist-mono text-[10px] uppercase tracking-[0.25em] text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors px-4">
               Login
             </a>
-            <CTAButton variant="primary" className="!px-6 !py-3">Démarrer</CTAButton>
+            <CTAButton variant="primary" className="!px-6 !py-3" href="/register">Démarrer</CTAButton>
           </div>
         </div>
       </nav>
@@ -462,10 +490,10 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-            <CTAButton variant="primary" className="!px-10 !py-5 !text-sm">
+            <CTAButton variant="primary" className="!px-10 !py-5 !text-sm" href="/register">
               Créer un espace gratuit <ArrowRight className="w-4 h-4" />
             </CTAButton>
-            <CTAButton variant="secondary" className="!px-10 !py-5 !text-sm">Réserver une démo</CTAButton>
+            <CTAButton variant="secondary" className="!px-10 !py-5 !text-sm" href="mailto:contact@sparkhub.fr?subject=Demande%20de%20d%C3%A9mo">Réserver une démo</CTAButton>
           </div>
         </div>
 
@@ -530,7 +558,7 @@ export default function LandingPage() {
               Rejoignez des milliers de professionnels qui orchestrent leur collaboration client dès aujourd&apos;hui.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <CTAButton variant="primary" className="!bg-white dark:!bg-zinc-900 !text-zinc-900 dark:!text-white !px-12 !py-6 !text-sm">
+              <CTAButton variant="primary" className="!bg-white dark:!bg-zinc-900 !text-zinc-900 dark:!text-white !px-12 !py-6 !text-sm" href="/register">
                 Essayer gratuitement
               </CTAButton>
               <span className="font-geist-mono text-[10px] uppercase tracking-[0.3em] text-white/50 dark:text-zinc-400">
