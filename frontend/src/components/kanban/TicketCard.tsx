@@ -52,13 +52,17 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
       className={cn(
         'group relative bg-card border rounded-lg p-3 cursor-pointer select-none',
         'hover:shadow-sm hover:border-primary/30 transition-all',
-        isDragging && 'opacity-50 shadow-lg border-primary/50 rotate-1'
+        isDragging && 'opacity-50 shadow-lg border-primary/50 rotate-1',
+        ticket.hasUnreadComments && 'border-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.2)] ring-1 ring-blue-500/50'
       )}
       onClick={() => {
         if (skipClick.current) return
         onClick(ticket)
       }}
     >
+      {ticket.hasUnreadComments && (
+        <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse z-10 border-2 border-background" title="Nouveaux commentaires" />
+      )}
       {/* Actions menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -112,11 +116,8 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
       {/* Type icon + title */}
       <div className="flex items-start gap-2 pr-5">
         <span className="text-sm mt-0.5 shrink-0">{TYPE_ICON[ticket.type]}</span>
-        <div className="flex-1 min-w-0 flex items-center gap-2">
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-medium leading-snug line-clamp-2">{ticket.title}</p>
-          {ticket.hasUnreadComments && (
-            <div className="w-2 h-2 shrink-0 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" title="Nouveaux commentaires" />
-          )}
         </div>
       </div>
 
