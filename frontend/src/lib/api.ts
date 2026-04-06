@@ -51,6 +51,8 @@ function redirectToLogin() {
 // Normalize error shape — attempt token refresh on 401 before redirecting
 let isRefreshing = false
 let pendingRequests: Array<(token: string) => void> = []
+let refreshFailures = 0
+let refreshCooldownUntil = 0
 
 apiClient.interceptors.response.use(
   (res) => res,
@@ -61,6 +63,14 @@ apiClient.interceptors.response.use(
       const refreshToken = Cookies.get(REFRESH_TOKEN_KEY)
 
       if (refreshToken) {
+        // Exponential backoff: skip refresh if in cooldown period
+        if (Date.now() < refreshCooldownUntil) {
+          Cookies.remove(TOKEN_KEY)
+          Cookies.remove(REFRESH_TOKEN_KEY)
+          redirectToLogin()
+          return Promise.reject(new Error('Session expirée'))
+        }
+
         if (isRefreshing) {
           // Queue this request until the refresh completes
           return new Promise((resolve) => {
@@ -85,6 +95,7 @@ apiClient.interceptors.response.use(
 
           Cookies.set(TOKEN_KEY, newToken)
           Cookies.set(REFRESH_TOKEN_KEY, newRefresh)
+          refreshFailures = 0
 
           // Replay queued requests
           pendingRequests.forEach((cb) => cb(newToken))
@@ -93,6 +104,8 @@ apiClient.interceptors.response.use(
           originalRequest.headers.set('Authorization', `Bearer ${newToken}`)
           return apiClient(originalRequest)
         } catch {
+          refreshFailures += 1
+          refreshCooldownUntil = Date.now() + Math.min(1000 * 2 ** refreshFailures, 30_000)
           pendingRequests = []
           Cookies.remove(TOKEN_KEY)
           Cookies.remove(REFRESH_TOKEN_KEY)
@@ -130,6 +143,8 @@ export const authApi = {
       payload
     )
     if (data.data?.refreshToken) Cookies.set(REFRESH_TOKEN_KEY, data.data.refreshToken)
+    refreshFailures = 0
+    refreshCooldownUntil = 0
     return data.data!
   },
 
@@ -139,6 +154,8 @@ export const authApi = {
       credentials
     )
     if (data.data?.refreshToken) Cookies.set(REFRESH_TOKEN_KEY, data.data.refreshToken)
+    refreshFailures = 0
+    refreshCooldownUntil = 0
     return data.data!
   },
 

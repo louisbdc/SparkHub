@@ -14,7 +14,7 @@ export function useUnreadMessages(workspaceId: string, isActive = false) {
     queryKey: ['messages', 'unread', workspaceId],
     queryFn: () => messagesApi.getUnreadCount(workspaceId),
     enabled: !!workspaceId && !!currentUser,
-    staleTime: 30_000,
+    staleTime: 5 * 60_000,
   })
 
   useEffect(() => {

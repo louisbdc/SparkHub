@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { requireAuth } from '@/lib/auth-guard'
+import { requireAuth, clearAuthCacheForToken } from '@/lib/auth-guard'
 import { sendSuccess, sendError } from '@/lib/api-utils'
 import { mapProfile } from '@/lib/db-mappers'
 
@@ -44,6 +44,9 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error || !updated) return sendError('Mise à jour échouée', 500)
+
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '').trim()
+    if (token) clearAuthCacheForToken(token)
 
     return sendSuccess({ user: mapProfile({ ...profile, ...updated }) })
   } catch (e) {

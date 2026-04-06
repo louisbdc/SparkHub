@@ -28,7 +28,11 @@ export function useWorkspaceSocket(workspaceId: string, currentUserId: string | 
       if (message.author._id === currentUserId) return
       queryClient.setQueryData<Message[]>(
         ['messages', workspaceId],
-        (prev) => (prev ? [...prev, message] : [message])
+        (prev) => {
+          if (!prev) return [message]
+          if (prev.some((m) => m._id === message._id)) return prev
+          return [...prev, message]
+        }
       )
     })
 

@@ -16,6 +16,8 @@ export function useDashboardTickets(workspaces: Workspace[] | undefined) {
       queryKey: ['tickets', ws._id],
       queryFn: () => ticketsApi.list(ws._id),
       enabled: Boolean(ws._id),
+      staleTime: 5 * 60_000,
+      refetchOnWindowFocus: true,
     })),
   })
 

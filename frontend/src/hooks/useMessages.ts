@@ -23,6 +23,7 @@ export function useMessages(workspaceId: string) {
     if (!workspaceId) return
 
     const supabase = createSupabaseBrowserClient()
+    const pendingTimeouts: ReturnType<typeof setTimeout>[] = []
 
     const channel = supabase
       .channel(`messages:${workspaceId}`)
@@ -36,22 +37,19 @@ export function useMessages(workspaceId: string) {
         },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
+            // Socket.io (useWorkspaceSocket) is the primary channel for INSERTs
+            // and delivers enriched messages. Only invalidate as a fallback if
+            // the message hasn't been added by the socket handler within 3s.
             const newId = (payload.new as { id: string }).id
-            try {
-              const message = await messagesApi.getById(workspaceId, newId)
-              queryClient.setQueryData<Message[]>(
-                messagesKey(workspaceId),
-                (prev) => {
-                  if (!prev) return [message]
-                  if (prev.some((m) => m._id === message._id)) return prev
-                  return [...prev, message]
-                }
-              )
-            } catch {
-              // Fallback: refetch everything if enrichment fails
-              queryClient.invalidateQueries({ queryKey: messagesKey(workspaceId) })
-            }
+            const t = setTimeout(() => {
+              const current = queryClient.getQueryData<Message[]>(messagesKey(workspaceId))
+              if (current && !current.some((m) => m._id === newId)) {
+                queryClient.invalidateQueries({ queryKey: messagesKey(workspaceId) })
+              }
+            }, 3_000)
+            pendingTimeouts.push(t)
           } else if (payload.eventType === 'UPDATE') {
+            // For updates, fetch the enriched version (no socket event covers this)
             const updatedId = (payload.new as { id: string }).id
             try {
               const message = await messagesApi.getById(workspaceId, updatedId)
@@ -60,7 +58,11 @@ export function useMessages(workspaceId: string) {
                 (prev) => prev?.map((m) => (m._id === message._id ? message : m)) ?? []
               )
             } catch {
-              queryClient.invalidateQueries({ queryKey: messagesKey(workspaceId) })
+              // Delayed fallback instead of immediate full invalidation
+              const t = setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: messagesKey(workspaceId) })
+              }, 5_000)
+              pendingTimeouts.push(t)
             }
           } else if (payload.eventType === 'DELETE') {
             const deletedId = (payload.old as { id: string }).id
@@ -74,6 +76,7 @@ export function useMessages(workspaceId: string) {
       .subscribe()
 
     return () => {
+      pendingTimeouts.forEach(clearTimeout)
       supabase.removeChannel(channel)
     }
   }, [workspaceId, queryClient])
