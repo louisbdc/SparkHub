@@ -398,6 +398,10 @@ export const ticketsApi = {
   delete: async (workspaceId: string, ticketId: string): Promise<void> => {
     await apiClient.delete(`/workspaces/${workspaceId}/tickets/${ticketId}`)
   },
+
+  markAsRead: async (workspaceId: string, ticketId: string): Promise<void> => {
+    await apiClient.post(`/tickets/${workspaceId}/${ticketId}/read`, {})
+  },
 }
 
 // ── Comments ─────────────────────────────────────────────────────────────────

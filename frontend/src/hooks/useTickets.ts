@@ -217,3 +217,31 @@ export function groupTicketsByStatus(tickets: Ticket[]): Record<TicketStatus, Ti
     >
   )
 }
+
+export function useMarkTicketRead(workspaceId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (ticketId: string) => ticketsApi.markAsRead(workspaceId, ticketId),
+    onMutate: async (ticketId) => {
+      await queryClient.cancelQueries({ queryKey: ticketsKey(workspaceId) })
+      const previous = queryClient.getQueryData<Ticket[]>(ticketsKey(workspaceId))
+
+      // Optimistic update
+      queryClient.setQueryData<Ticket[]>(
+        ticketsKey(workspaceId),
+        (prev) => prev?.map((t) => t._id === ticketId ? { ...t, hasUnreadComments: false } : t) ?? []
+      )
+
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(ticketsKey(workspaceId), context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ticketsKey(workspaceId) })
+    },
+  })
+}

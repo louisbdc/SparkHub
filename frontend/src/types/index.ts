@@ -100,6 +100,7 @@ export interface Ticket {
   attachments: Attachment[]
   order: number
   parentId: string | null
+  hasUnreadComments?: boolean
   createdAt: string
   updatedAt: string
 }

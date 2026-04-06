@@ -112,7 +112,12 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
       {/* Type icon + title */}
       <div className="flex items-start gap-2 pr-5">
         <span className="text-sm mt-0.5 shrink-0">{TYPE_ICON[ticket.type]}</span>
-        <p className="text-sm font-medium leading-snug line-clamp-2">{ticket.title}</p>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <p className="text-sm font-medium leading-snug line-clamp-2">{ticket.title}</p>
+          {ticket.hasUnreadComments && (
+            <div className="w-2 h-2 shrink-0 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" title="Nouveaux commentaires" />
+          )}
+        </div>
       </div>
 
       {/* Footer */}

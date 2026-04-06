@@ -54,7 +54,35 @@ export async function GET(request: NextRequest, { params }: Params) {
     const { data: tickets, error } = await query
     if (error) return sendError('Erreur lors de la récupération des tickets', 500)
 
-    return sendSuccess({ tickets: (tickets ?? []).map(mapTicket) })
+    const ticketIds = tickets?.map((t) => t.id) ?? []
+    let readsMap = new Map<string, string>()
+
+    if (ticketIds.length > 0) {
+      const { data: reads } = await supabaseAdmin
+        .from('ticket_reads')
+        .select('ticket_id, last_read_at')
+        .eq('user_id', userId)
+        .in('ticket_id', ticketIds)
+
+      reads?.forEach((r) => readsMap.set(r.ticket_id, r.last_read_at))
+    }
+
+    const formattedTickets = (tickets ?? []).map((t) => {
+      const ticket = mapTicket(t)
+      let hasUnreadComments = false
+
+      if (t.last_comment_at) {
+        const lastRead = readsMap.get(t.id)
+        if (!lastRead) {
+          hasUnreadComments = true
+        } else if (new Date(t.last_comment_at) > new Date(lastRead)) {
+          hasUnreadComments = true
+        }
+      }
+      return { ...ticket, hasUnreadComments }
+    })
+
+    return sendSuccess({ tickets: formattedTickets })
   } catch (e) {
     if (e instanceof Response) return e
     return sendError('Erreur serveur', 500)

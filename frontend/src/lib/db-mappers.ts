@@ -77,6 +77,7 @@ export interface DbTicket {
   order: number
   created_at: string
   updated_at: string
+  last_comment_at?: string | null
   reporter: DbProfile
   assignee: DbProfile | null
   attachments: DbAttachment[]

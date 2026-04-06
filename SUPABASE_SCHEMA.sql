@@ -193,3 +193,27 @@ create index if not exists idx_notifications_user      on notifications(user_id,
 create index if not exists idx_message_reads_user      on message_reads(user_id, workspace_id);
 create index if not exists idx_workspace_invitations_ws    on workspace_invitations(workspace_id);
 create index if not exists idx_workspace_invitations_email on workspace_invitations(email);
+
+-- ── Ticket Reads & Comment Tracking ───────────────────────────────────────────
+alter table tickets add column if not exists last_comment_at timestamptz;
+
+create or replace function update_ticket_last_comment_at()
+returns trigger as $$
+begin
+  update tickets set last_comment_at = new.created_at where id = new.ticket_id;
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trg_update_ticket_last_comment_at on comments;
+create trigger trg_update_ticket_last_comment_at
+after insert on comments
+for each row execute function update_ticket_last_comment_at();
+
+create table if not exists ticket_reads (
+  user_id      uuid not null references profiles(id) on delete cascade,
+  ticket_id    uuid not null references tickets(id) on delete cascade,
+  last_read_at timestamptz not null default now(),
+  primary key (user_id, ticket_id)
+);
+create index if not exists idx_ticket_reads_user on ticket_reads(user_id);
