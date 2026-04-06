@@ -66,7 +66,8 @@ function Shell({ children }: { children: React.ReactNode }) {
     if (selectedTicket && selectedTicket.hasUnreadComments) {
       markTicketRead.mutate(selectedTicket._id)
     }
-  }, [selectedTicket, markTicketRead])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- markTicketRead is a new object every render
+  }, [selectedTicket?._id, selectedTicket?.hasUnreadComments])
 
   // Open ticket panel when navigating from a notification (?ticket=xxx)
   const ticketIdParam = searchParams.get('ticket')

@@ -235,13 +235,10 @@ export function useMarkTicketRead(workspaceId: string) {
 
       return { previous }
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(ticketsKey(workspaceId), context.previous)
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsKey(workspaceId) })
     },
+    // On error: keep the optimistic update (hasUnreadComments: false) to avoid infinite retry loop
+    retry: false,
   })
 }
