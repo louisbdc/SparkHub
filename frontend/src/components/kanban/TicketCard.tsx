@@ -60,9 +60,6 @@ export function TicketCard({ ticket, onClick, onEdit, onDelete }: TicketCardProp
         onClick(ticket)
       }}
     >
-      {ticket.hasUnreadComments && (
-        <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse z-10 border-2 border-background" title="Nouveaux commentaires" />
-      )}
       {/* Actions menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
