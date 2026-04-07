@@ -50,7 +50,7 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
   // Stable key based on ticket content — avoids re-firing when React Query
   // returns a new array reference with the same data (would otherwise loop)
   const ticketsKey = tickets
-    .map((t) => `${t._id}:${t.status}:${t.order}:${t.updatedAt}`)
+    .map((t) => `${t._id}:${t.status}:${t.order}:${t.updatedAt}:${t.hasUnreadComments}`)
     .join('|')
 
   // Sync from server when not mid-drag (background refetches, mutations settling…)
