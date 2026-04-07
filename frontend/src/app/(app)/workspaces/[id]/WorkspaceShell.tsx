@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, FolderOpen, LayoutGrid, Menu, MessageSquare, Plus, Settings } from 'lucide-react'
@@ -61,9 +61,15 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { count: unreadMessages } = useUnreadMessages(id, isOnDiscussion)
 
   const markTicketRead = useMarkTicketRead(id)
+  const lastMarkAttemptRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (selectedTicket && selectedTicket.hasUnreadComments) {
+    if (
+      selectedTicket &&
+      selectedTicket.hasUnreadComments &&
+      lastMarkAttemptRef.current !== selectedTicket._id
+    ) {
+      lastMarkAttemptRef.current = selectedTicket._id
       markTicketRead.mutate(selectedTicket._id)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

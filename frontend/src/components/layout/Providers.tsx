@@ -11,7 +11,8 @@ export function Providers({ children }: { children: ReactNode }) {
     () =>
       new QueryClient({
         mutationCache: new MutationCache({
-          onError: (error) => {
+          onError: (error, _variables, _context, mutation) => {
+            if (mutation.meta?.silent) return
             toast.error(error instanceof Error ? error.message : 'Une erreur est survenue')
           },
         }),

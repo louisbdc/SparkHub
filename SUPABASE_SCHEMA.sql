@@ -217,3 +217,4 @@ create table if not exists ticket_reads (
   primary key (user_id, ticket_id)
 );
 create index if not exists idx_ticket_reads_user on ticket_reads(user_id);
+alter table ticket_reads disable row level security;

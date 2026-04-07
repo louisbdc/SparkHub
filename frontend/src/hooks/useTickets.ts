@@ -223,11 +223,11 @@ export function useMarkTicketRead(workspaceId: string) {
 
   return useMutation({
     mutationFn: (ticketId: string) => ticketsApi.markAsRead(workspaceId, ticketId),
+    meta: { silent: true },
     onMutate: async (ticketId) => {
       await queryClient.cancelQueries({ queryKey: ticketsKey(workspaceId) })
       const previous = queryClient.getQueryData<Ticket[]>(ticketsKey(workspaceId))
 
-      // Optimistic update
       queryClient.setQueryData<Ticket[]>(
         ticketsKey(workspaceId),
         (prev) => prev?.map((t) => t._id === ticketId ? { ...t, hasUnreadComments: false } : t) ?? []
@@ -238,7 +238,12 @@ export function useMarkTicketRead(workspaceId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsKey(workspaceId) })
     },
-    // On error: keep optimistic update (hasUnreadComments: false) to prevent infinite retry loop
-    retry: false,
+    onError: (_error, _ticketId, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(ticketsKey(workspaceId), context.previous)
+      }
+    },
+    retry: 2,
+    retryDelay: 1000,
   })
 }
