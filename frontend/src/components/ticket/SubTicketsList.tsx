@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Loader2, Plus } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -48,6 +48,11 @@ export function SubTicketsList({ workspaceId, parentId, members = [], onTicketCl
   const [priority, setPriority] = useState<TicketPriority>('medium')
   const [type, setType] = useState<TicketType>('task')
   const [assigneeId, setAssigneeId] = useState<string>('none')
+  const [pendingImages, setPendingImages] = useState<Map<string, File>>(new Map())
+
+  useEffect(() => {
+    return () => { pendingImages.forEach((_f, url) => URL.revokeObjectURL(url)) }
+  }, [])
 
   const { data: children = [], isLoading } = useChildTickets(workspaceId, parentId)
   const createChild = useCreateChildTicket(workspaceId, parentId)
@@ -57,12 +62,20 @@ export function SubTicketsList({ workspaceId, parentId, members = [], onTicketCl
   const doneCount = children.filter((c) => c.status === 'done').length
   const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0
 
+  const handleImagePaste = (file: File, insertMarkdown: (md: string) => void) => {
+    const blobUrl = URL.createObjectURL(file)
+    setPendingImages((prev) => new Map(prev).set(blobUrl, file))
+    insertMarkdown(`![image](${blobUrl})`)
+  }
+
   const resetForm = () => {
     setTitle('')
+    pendingImages.forEach((_f, url) => URL.revokeObjectURL(url))
     setDescription('')
     setPriority('medium')
     setType('task')
     setAssigneeId('none')
+    setPendingImages(new Map())
     setShowForm(false)
   }
 
@@ -70,13 +83,32 @@ export function SubTicketsList({ workspaceId, parentId, members = [], onTicketCl
     e.preventDefault()
     const trimmed = title.trim()
     if (!trimmed) return
+
+    let desc = description.trim()
+    const imageFiles: File[] = []
+    if (pendingImages.size > 0) {
+      let idx = 0
+      for (const [blobUrl, file] of pendingImages) {
+        if (desc.includes(blobUrl)) {
+          desc = desc.replace(blobUrl, `__IMGPASTE_${idx}__`)
+          imageFiles.push(file)
+          idx++
+        } else {
+          URL.revokeObjectURL(blobUrl)
+        }
+      }
+    }
+
     createChild.mutate(
       {
-        title: trimmed,
-        description: description.trim() || undefined,
-        priority,
-        type,
-        assigneeId: assigneeId !== 'none' ? assigneeId : undefined,
+        payload: {
+          title: trimmed,
+          description: desc || undefined,
+          priority,
+          type,
+          assigneeId: assigneeId !== 'none' ? assigneeId : undefined,
+        },
+        descriptionImages: imageFiles.length > 0 ? imageFiles : undefined,
       },
       { onSuccess: resetForm }
     )
@@ -189,7 +221,9 @@ export function SubTicketsList({ workspaceId, parentId, members = [], onTicketCl
             <MarkdownTextarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description (optionnelle, Markdown supporté)…"
+              onValueChange={setDescription}
+              onImagePaste={handleImagePaste}
+              placeholder="Description (optionnelle, Markdown supporté, images collables)…"
               rows={3}
               onKeyDown={(e) => { if (e.key === 'Escape') resetForm() }}
             />

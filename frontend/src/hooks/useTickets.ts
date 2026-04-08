@@ -154,8 +154,13 @@ export function useCreateChildTicket(workspaceId: string, parentId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (payload: CreateChildTicketPayload) =>
-      ticketsApi.create(workspaceId, { ...payload, parentId }),
+    mutationFn: ({
+      payload,
+      descriptionImages,
+    }: {
+      payload: CreateChildTicketPayload
+      descriptionImages?: File[]
+    }) => ticketsApi.create(workspaceId, { ...payload, parentId }, undefined, descriptionImages),
     onSuccess: (newTicket) => {
       queryClient.setQueryData<Ticket[]>(
         childTicketsKey(workspaceId, parentId),
