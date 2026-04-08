@@ -54,7 +54,10 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     const { data: tickets, error } = await query
-    if (error) return sendError('Erreur lors de la récupération des tickets', 500)
+    if (error) {
+      console.error('[tickets GET] Supabase error:', JSON.stringify(error))
+      return sendError('Erreur lors de la récupération des tickets', 500)
+    }
 
     const ticketIds = tickets?.map((t) => t.id) ?? []
     let readsMap = new Map<string, string>()
