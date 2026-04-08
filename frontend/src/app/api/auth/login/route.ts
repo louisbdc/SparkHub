@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSuccess, sendError } from '@/lib/api-utils'
@@ -29,7 +30,17 @@ export async function POST(request: NextRequest) {
 
     const { email, password } = parsed.data
 
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.signInWithPassword({
+    // Use a dedicated per-request client for signInWithPassword so the user
+    // session never contaminates the shared supabaseAdmin singleton, which
+    // would cause subsequent DB queries to use the user JWT instead of the
+    // service role key (making them subject to RLS).
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { data: sessionData, error: sessionError } = await authClient.auth.signInWithPassword({
       email,
       password,
     })

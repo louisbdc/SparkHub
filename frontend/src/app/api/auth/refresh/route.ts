@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSuccess, sendError } from '@/lib/api-utils'
 
 const schema = z.object({
@@ -15,7 +15,15 @@ export async function POST(request: NextRequest) {
       return sendError('Refresh token manquant', 400)
     }
 
-    const { data, error } = await supabaseAdmin.auth.refreshSession({
+    // Per-request client so the refreshed session doesn't contaminate the
+    // shared supabaseAdmin singleton.
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    const { data, error } = await authClient.auth.refreshSession({
       refresh_token: parsed.data.refreshToken,
     })
 
