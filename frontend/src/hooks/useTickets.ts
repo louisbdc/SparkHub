@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ticketsApi } from '@/lib/api'
-import type { CreateTicketDto, Ticket, TicketPriority, TicketStatus, TicketType, UpdateTicketDto } from '@/types'
+import type { CreateTicketDto, Ticket, TicketPriority, TicketStatus, TicketTodo, TicketType, UpdateTicketDto } from '@/types'
 
 const ticketsKey = (workspaceId: string) => ['tickets', workspaceId]
 const childTicketsKey = (workspaceId: string, parentId: string) => ['tickets', workspaceId, 'children', parentId]
@@ -21,8 +21,15 @@ export function useCreateTicket(workspaceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ payload, files }: { payload: CreateTicketDto; files?: File[] }) =>
-      ticketsApi.create(workspaceId, payload, files),
+    mutationFn: ({
+      payload,
+      files,
+      descriptionImages,
+    }: {
+      payload: CreateTicketDto
+      files?: File[]
+      descriptionImages?: File[]
+    }) => ticketsApi.create(workspaceId, payload, files, descriptionImages),
     onSuccess: (newTicket) => {
       queryClient.setQueryData<Ticket[]>(
         ticketsKey(workspaceId),
@@ -162,8 +169,15 @@ export function useEditTicket(workspaceId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ ticketId, payload }: { ticketId: string; payload: UpdateTicketDto }) =>
-      ticketsApi.update(workspaceId, ticketId, payload),
+    mutationFn: ({
+      ticketId,
+      payload,
+      descriptionImages,
+    }: {
+      ticketId: string
+      payload: UpdateTicketDto & { todos?: { text: string; done: boolean }[] }
+      descriptionImages?: File[]
+    }) => ticketsApi.update(workspaceId, ticketId, payload, undefined, descriptionImages),
     onSuccess: (updated) => {
       // Update root tickets cache
       queryClient.setQueryData<Ticket[]>(
@@ -197,6 +211,42 @@ export function useDeleteTicket(workspaceId: string) {
         ticketsKey(workspaceId),
         (prev) => prev?.filter((t) => t._id !== ticketId) ?? []
       )
+    },
+  })
+}
+
+export function useToggleTodo(workspaceId: string, ticketId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ todoId, done }: { todoId: string; done: boolean }) =>
+      ticketsApi.toggleTodo(workspaceId, ticketId, todoId, done),
+    onMutate: async ({ todoId, done }) => {
+      await queryClient.cancelQueries({ queryKey: ticketsKey(workspaceId) })
+      const previous = queryClient.getQueryData<Ticket[]>(ticketsKey(workspaceId))
+      queryClient.setQueryData<Ticket[]>(
+        ticketsKey(workspaceId),
+        (prev) =>
+          prev?.map((t) =>
+            t._id === ticketId
+              ? {
+                  ...t,
+                  todos: t.todos.map((todo) =>
+                    todo._id === todoId ? { ...todo, done } : todo
+                  ),
+                }
+              : t
+          ) ?? []
+      )
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(ticketsKey(workspaceId), context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ticketsKey(workspaceId) })
     },
   })
 }

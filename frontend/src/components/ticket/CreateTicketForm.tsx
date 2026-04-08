@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select'
 import { useCreateTicket } from '@/hooks/useTickets'
 import { useWorkspace } from '@/hooks/useWorkspaces'
+import { TodoEditor, type TodoItem } from './TodoEditor'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_TYPE_LABELS,
@@ -50,6 +51,9 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
   const createTicket = useCreateTicket(workspaceId)
   const { data: workspace } = useWorkspace(workspaceId)
   const [files, setFiles] = useState<File[]>([])
+  const [todos, setTodos] = useState<TodoItem[]>([])
+  // Map from blob URL → File for pending inline images
+  const [pendingImages, setPendingImages] = useState<Map<string, File>>(new Map())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const members = [
@@ -80,6 +84,15 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
     }
   }, [soloDefault?._id])
 
+  // Revoke all pending blob URLs when component unmounts or form resets
+  const revokePendingImages = (map: Map<string, File>) => {
+    map.forEach((_file, blobUrl) => URL.revokeObjectURL(blobUrl))
+  }
+
+  useEffect(() => {
+    return () => revokePendingImages(pendingImages)
+  }, []) // Only on unmount
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? [])
     setFiles((prev) => [...prev, ...selected])
@@ -90,13 +103,50 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const handleImagePaste = (file: File, insertMarkdown: (md: string) => void) => {
+    const blobUrl = URL.createObjectURL(file)
+    setPendingImages((prev) => new Map(prev).set(blobUrl, file))
+    insertMarkdown(`![image](${blobUrl})`)
+  }
+
+  const handleDescriptionChange = (newValue: string) => {
+    setValue('description', newValue)
+  }
+
   const onSubmit = (values: FormValues) => {
+    let description = values.description ?? ''
+    const imageFiles: File[] = []
+
+    // Replace blob: URLs with __IMGPASTE_N__ tokens and collect files in order
+    if (pendingImages.size > 0) {
+      let idx = 0
+      const newPending = new Map(pendingImages)
+      for (const [blobUrl, file] of pendingImages) {
+        if (description.includes(blobUrl)) {
+          description = description.replace(blobUrl, `__IMGPASTE_${idx}__`)
+          imageFiles.push(file)
+          idx++
+        } else {
+          // Image was removed from description — just revoke it
+          URL.revokeObjectURL(blobUrl)
+          newPending.delete(blobUrl)
+        }
+      }
+    }
+
     createTicket.mutate(
-      { payload: values, files: files.length > 0 ? files : undefined },
+      {
+        payload: { ...values, description, todos: todos.length > 0 ? todos : undefined },
+        files: files.length > 0 ? files : undefined,
+        descriptionImages: imageFiles.length > 0 ? imageFiles : undefined,
+      },
       {
         onSuccess: () => {
+          revokePendingImages(pendingImages)
           reset()
           setFiles([])
+          setTodos([])
+          setPendingImages(new Map())
           setAssigneeValue(soloDefault?._id ?? 'none')
           setValue('assigneeId', soloDefault?._id)
           onSuccess()
@@ -125,14 +175,22 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
         <Label htmlFor="description">Description</Label>
         <MarkdownTextarea
           id="description"
-          placeholder="Décrivez le problème ou la demande... (Markdown supporté)"
+          placeholder="Décrivez le problème ou la demande... (Markdown supporté, images collables)"
           rows={6}
           value={watch('description') ?? ''}
+          onImagePaste={handleImagePaste}
+          onValueChange={handleDescriptionChange}
           {...register('description')}
         />
         {errors.description && (
           <p className="text-xs text-destructive">{errors.description.message}</p>
         )}
+      </div>
+
+      {/* Todos */}
+      <div className="space-y-2">
+        <Label>Tâches</Label>
+        <TodoEditor todos={todos} onChange={setTodos} />
       </div>
 
       {/* Type + Priority row */}
@@ -247,7 +305,17 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
       )}
 
       <div className="flex justify-end gap-2 pt-1">
-        <Button type="button" variant="outline" onClick={() => { reset(); setFiles([]) }}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            revokePendingImages(pendingImages)
+            setPendingImages(new Map())
+            setTodos([])
+            setFiles([])
+            reset()
+          }}
+        >
           Réinitialiser
         </Button>
         <Button type="submit" disabled={createTicket.isPending || assigneeValue === 'none'}>

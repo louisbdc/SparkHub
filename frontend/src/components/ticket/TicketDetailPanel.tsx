@@ -26,6 +26,7 @@ import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 import { FilePreviewModal } from './FilePreviewModal'
 import { SubTicketsList } from './SubTicketsList'
 import { EditTicketForm } from './EditTicketForm'
+import { TodoList } from './TodoList'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_STATUS_LABELS,
@@ -201,6 +202,20 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">Aucune description</p>
+                  )}
+
+                  {/* Todos */}
+                  {liveTicket.todos.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        Tâches ({liveTicket.todos.filter((t) => t.done).length}/{liveTicket.todos.length})
+                      </p>
+                      <TodoList
+                        todos={liveTicket.todos}
+                        ticketId={liveTicket._id}
+                        workspaceId={workspaceId}
+                      />
+                    </div>
                   )}
 
                   {/* Attachments */}

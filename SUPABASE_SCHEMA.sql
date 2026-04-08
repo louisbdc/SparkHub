@@ -219,3 +219,33 @@ create table if not exists ticket_reads (
 );
 create index if not exists idx_ticket_reads_user on ticket_reads(user_id);
 alter table ticket_reads enable row level security;
+
+-- ── Ticket Todos ──────────────────────────────────────────────────────────────
+create table if not exists ticket_todos (
+  id         uuid primary key default gen_random_uuid(),
+  ticket_id  uuid not null references tickets(id) on delete cascade,
+  text       text not null,
+  done       boolean not null default false,
+  "order"    integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists idx_ticket_todos_ticket on ticket_todos(ticket_id, "order");
+alter table ticket_todos enable row level security;
+create or replace trigger trg_ticket_todos_updated_at
+  before update on ticket_todos
+  for each row execute function update_updated_at();
+
+-- ── Ticket Description Images ─────────────────────────────────────────────────
+create table if not exists ticket_images (
+  id           uuid primary key default gen_random_uuid(),
+  ticket_id    uuid not null references tickets(id) on delete cascade,
+  storage_key  text not null,
+  filename     text not null,
+  originalname text not null,
+  mime_type    text not null,
+  size         bigint not null,
+  uploaded_at  timestamptz not null default now()
+);
+create index if not exists idx_ticket_images_ticket on ticket_images(ticket_id);
+alter table ticket_images enable row level security;

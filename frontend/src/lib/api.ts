@@ -9,6 +9,7 @@ import type {
   Message,
   Notification,
   Ticket,
+  TicketTodo,
   UpdateTicketDto,
   Workspace,
 } from '@/types'
@@ -332,16 +333,26 @@ export const ticketsApi = {
     return data.data!.ticket
   },
 
-  create: async (workspaceId: string, payload: CreateTicketDto, files?: File[]): Promise<Ticket> => {
+  create: async (
+    workspaceId: string,
+    payload: CreateTicketDto,
+    files?: File[],
+    descriptionImages?: File[]
+  ): Promise<Ticket> => {
+    const hasFiles = (files && files.length > 0) || (descriptionImages && descriptionImages.length > 0)
+
     let body: FormData | CreateTicketDto
     let headers: Record<string, string> = {}
 
-    if (files && files.length > 0) {
+    if (hasFiles) {
       const form = new FormData()
-      Object.entries(payload).forEach(([key, value]) => {
+      const { todos, ...rest } = payload
+      Object.entries(rest).forEach(([key, value]) => {
         if (value !== undefined && value !== null) form.append(key, String(value))
       })
-      files.forEach((file) => form.append('attachments', file))
+      if (todos && todos.length > 0) form.append('todos', JSON.stringify(todos))
+      files?.forEach((file) => form.append('attachments', file))
+      descriptionImages?.forEach((file) => form.append('descriptionImages', file))
       body = form
     } else {
       body = payload
@@ -359,18 +370,24 @@ export const ticketsApi = {
   update: async (
     workspaceId: string,
     ticketId: string,
-    payload: UpdateTicketDto,
-    files?: File[]
+    payload: UpdateTicketDto & { todos?: { text: string; done: boolean }[] },
+    files?: File[],
+    descriptionImages?: File[]
   ): Promise<Ticket> => {
-    let body: FormData | UpdateTicketDto
+    const hasFiles = (files && files.length > 0) || (descriptionImages && descriptionImages.length > 0)
+
+    let body: FormData | typeof payload
     let headers: Record<string, string> = {}
 
-    if (files && files.length > 0) {
+    if (hasFiles) {
       const form = new FormData()
-      Object.entries(payload).forEach(([key, value]) => {
+      const { todos, ...rest } = payload
+      Object.entries(rest).forEach(([key, value]) => {
         if (value !== undefined && value !== null) form.append(key, String(value))
       })
-      files.forEach((file) => form.append('attachments', file))
+      if (todos !== undefined) form.append('todos', JSON.stringify(todos))
+      files?.forEach((file) => form.append('attachments', file))
+      descriptionImages?.forEach((file) => form.append('descriptionImages', file))
       body = form
     } else {
       body = payload
@@ -383,6 +400,19 @@ export const ticketsApi = {
       { headers }
     )
     return data.data!.ticket
+  },
+
+  toggleTodo: async (
+    workspaceId: string,
+    ticketId: string,
+    todoId: string,
+    done: boolean
+  ): Promise<TicketTodo> => {
+    const { data } = await apiClient.patch<ApiResponse<{ todo: TicketTodo }>>(
+      `/workspaces/${workspaceId}/tickets/${ticketId}/todos/${todoId}`,
+      { done }
+    )
+    return data.data!.todo
   },
 
   // Dedicated endpoint for Kanban drag-and-drop (status + order only)

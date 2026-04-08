@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAuth } from '@/lib/auth-guard'
@@ -15,7 +16,8 @@ const TICKET_SELECT = `
   *,
   reporter:profiles!tickets_reporter_id_fkey(*),
   assignee:profiles!tickets_assignee_id_fkey(*),
-  attachments(*)
+  attachments(*),
+  ticket_todos(*)
 `
 
 const updateSchema = z.object({
@@ -70,15 +72,17 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const existing = await fetchTicket(ticketId, id)
     if (!existing) return sendError('Ticket introuvable', 404)
 
-    let fields: Record<string, string> = {}
-    let files: File[] = []
+    let fields: Record<string, unknown> = {}
+    let attachmentFiles: File[] = []
+    let descriptionImageFiles: File[] = []
 
     const contentType = request.headers.get('content-type') ?? ''
     if (contentType.includes('multipart/form-data')) {
       const form = await request.formData()
       for (const [key, val] of form.entries()) {
         if (typeof val === 'string') fields[key] = val
-        else files.push(val as File) // Blob/File in Node.js runtime
+        else if (key === 'descriptionImages') descriptionImageFiles.push(val as File)
+        else attachmentFiles.push(val as File)
       }
     } else {
       fields = await request.json()
@@ -89,9 +93,40 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return sendError(parsed.error.issues[0].message, 422)
     }
 
+    // Parse todos — FormData sends a JSON string, JSON body sends the array directly
+    let todosPayload: { text: string; done: boolean }[] | undefined
+    try {
+      if (fields.todos !== undefined) {
+        todosPayload = typeof fields.todos === 'string'
+          ? JSON.parse(fields.todos)
+          : (fields.todos as { text: string; done: boolean }[])
+      }
+    } catch { /* ignore malformed todos */ }
+
+    // Handle inline description images: upload + replace __IMGPASTE_N__ tokens
+    let resolvedDescription = parsed.data.description
+    if (descriptionImageFiles.length > 0 && resolvedDescription !== undefined) {
+      const inlineImageIds = descriptionImageFiles.map(() => randomUUID())
+      inlineImageIds.forEach((imgId, idx) => {
+        resolvedDescription = resolvedDescription!.replace(`__IMGPASTE_${idx}__`, `/api/ticket-images/${imgId}`)
+      })
+      const uploads = await Promise.all(descriptionImageFiles.map(uploadFile))
+      const imageRows = uploads.map((u, idx) => ({
+        id: inlineImageIds[idx],
+        ticket_id: ticketId,
+        storage_key: u.storageKey,
+        filename: u.filename,
+        originalname: u.originalname,
+        mime_type: u.mimeType,
+        size: u.size,
+      }))
+      const { error: imgErr } = await supabaseAdmin.from('ticket_images').insert(imageRows)
+      if (imgErr) console.error('[ticket PATCH] ticket_images insert error:', imgErr)
+    }
+
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (parsed.data.title !== undefined) updates.title = parsed.data.title
-    if (parsed.data.description !== undefined) updates.description = parsed.data.description
+    if (resolvedDescription !== undefined) updates.description = resolvedDescription
     if (parsed.data.status !== undefined) updates.status = parsed.data.status
     if (parsed.data.priority !== undefined) updates.priority = parsed.data.priority
     if (parsed.data.type !== undefined) updates.type = parsed.data.type
@@ -106,9 +141,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       if (error) return sendError('Mise à jour échouée', 500)
     }
 
-    // Upload new files
-    if (files.length > 0) {
-      const uploads = await Promise.all(files.map(uploadFile))
+    // Upload new regular file attachments
+    if (attachmentFiles.length > 0) {
+      const uploads = await Promise.all(attachmentFiles.map(uploadFile))
       const attachmentRows = uploads.map((u) => ({
         ticket_id: ticketId,
         storage_key: u.storageKey,
@@ -118,6 +153,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         size: u.size,
       }))
       await supabaseAdmin.from('attachments').insert(attachmentRows)
+    }
+
+    // Full replace todos if provided
+    if (todosPayload !== undefined) {
+      await supabaseAdmin.from('ticket_todos').delete().eq('ticket_id', ticketId)
+      if (todosPayload.length > 0) {
+        const todoRows = todosPayload.map((t, idx) => ({
+          ticket_id: ticketId,
+          text: t.text,
+          done: t.done,
+          order: idx,
+        }))
+        const { error: todoErr } = await supabaseAdmin.from('ticket_todos').insert(todoRows)
+        if (todoErr) console.error('[ticket PATCH] ticket_todos insert error:', todoErr)
+      }
     }
 
     const ticket = await fetchTicket(ticketId, id)

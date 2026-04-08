@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useEditTicket } from '@/hooks/useTickets'
+import { TodoEditor, type TodoItem } from './TodoEditor'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_TYPE_LABELS,
@@ -53,6 +54,17 @@ interface EditTicketFormProps {
 export function EditTicketForm({ ticket, workspaceId, members, onSuccess, onCancel }: EditTicketFormProps) {
   const editTicket = useEditTicket(workspaceId)
   const [assigneeValue, setAssigneeValue] = useState<string>(ticket.assignee?._id ?? 'none')
+  const [todos, setTodos] = useState<TodoItem[]>(() =>
+    ticket.todos.map((t) => ({ text: t.text, done: t.done }))
+  )
+  // Map from blob URL → File for newly pasted inline images in this edit session
+  const [pendingImages, setPendingImages] = useState<Map<string, File>>(new Map())
+
+  useEffect(() => {
+    return () => {
+      pendingImages.forEach((_file, blobUrl) => URL.revokeObjectURL(blobUrl))
+    }
+  }, [])
 
   const {
     register,
@@ -71,12 +83,52 @@ export function EditTicketForm({ ticket, workspaceId, members, onSuccess, onCanc
     },
   })
 
+  const handleImagePaste = (file: File, insertMarkdown: (md: string) => void) => {
+    const blobUrl = URL.createObjectURL(file)
+    setPendingImages((prev) => new Map(prev).set(blobUrl, file))
+    insertMarkdown(`![image](${blobUrl})`)
+  }
+
   const onSubmit = (values: FormValues) => {
+    let description = values.description ?? ''
+    const imageFiles: File[] = []
+
+    // Replace only newly-pasted blob: URLs with __IMGPASTE_N__ tokens
+    // Existing /api/ticket-images/:id references are left untouched
+    if (pendingImages.size > 0) {
+      let idx = 0
+      for (const [blobUrl, file] of pendingImages) {
+        if (description.includes(blobUrl)) {
+          description = description.replace(blobUrl, `__IMGPASTE_${idx}__`)
+          imageFiles.push(file)
+          idx++
+        } else {
+          URL.revokeObjectURL(blobUrl)
+        }
+      }
+    }
+
     const payload = {
       ...values,
+      description,
       assigneeId: assigneeValue === 'none' ? null : assigneeValue,
+      todos: todos.map((t) => ({ text: t.text, done: t.done })),
     }
-    editTicket.mutate({ ticketId: ticket._id, payload }, { onSuccess })
+
+    editTicket.mutate(
+      {
+        ticketId: ticket._id,
+        payload,
+        descriptionImages: imageFiles.length > 0 ? imageFiles : undefined,
+      },
+      {
+        onSuccess: () => {
+          pendingImages.forEach((_file, blobUrl) => URL.revokeObjectURL(blobUrl))
+          setPendingImages(new Map())
+          onSuccess()
+        },
+      }
+    )
   }
 
   return (
@@ -96,10 +148,18 @@ export function EditTicketForm({ ticket, workspaceId, members, onSuccess, onCanc
         <MarkdownTextarea
           id="edit-description"
           rows={6}
-          placeholder="Décrivez le ticket... (Markdown supporté)"
+          placeholder="Décrivez le ticket... (Markdown supporté, images collables)"
           value={watch('description') ?? ''}
+          onImagePaste={handleImagePaste}
+          onValueChange={(v) => setValue('description', v)}
           {...register('description')}
         />
+      </div>
+
+      {/* Todos */}
+      <div className="space-y-2">
+        <Label>Tâches</Label>
+        <TodoEditor todos={todos} onChange={setTodos} />
       </div>
 
       {/* Status + Priority */}

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { requireAuth } from '@/lib/auth-guard'
@@ -15,7 +16,8 @@ const TICKET_SELECT = `
   *,
   reporter:profiles!tickets_reporter_id_fkey(*),
   assignee:profiles!tickets_assignee_id_fkey(*),
-  attachments(*)
+  attachments(*),
+  ticket_todos(*)
 `
 
 const createSchema = z.object({
@@ -98,15 +100,17 @@ export async function POST(request: NextRequest, { params }: Params) {
     const allowed = await isWorkspaceMemberOrOwner(id, userId)
     if (!allowed) return sendError('Accès refusé', 403)
 
-    let fields: Record<string, string> = {}
-    let files: File[] = []
+    let fields: Record<string, unknown> = {}
+    let attachmentFiles: File[] = []
+    let descriptionImageFiles: File[] = []
 
     const contentType = request.headers.get('content-type') ?? ''
     if (contentType.includes('multipart/form-data')) {
       const form = await request.formData()
       for (const [key, val] of form.entries()) {
         if (typeof val === 'string') fields[key] = val
-        else files.push(val as File) // Blob/File in Node.js runtime
+        else if (key === 'descriptionImages') descriptionImageFiles.push(val as File)
+        else attachmentFiles.push(val as File)
       }
     } else {
       fields = await request.json()
@@ -117,7 +121,26 @@ export async function POST(request: NextRequest, { params }: Params) {
       return sendError(parsed.error.issues[0].message, 422)
     }
 
-    const { title, description, priority, type, assigneeId, parentId } = parsed.data
+    const { title, priority, type, assigneeId, parentId } = parsed.data
+
+    // Parse todos — FormData sends a JSON string, JSON body sends the array directly
+    let todosPayload: { text: string; done: boolean }[] = []
+    try {
+      if (fields.todos !== undefined) {
+        todosPayload = typeof fields.todos === 'string'
+          ? JSON.parse(fields.todos)
+          : (fields.todos as { text: string; done: boolean }[])
+      }
+    } catch { /* ignore malformed todos */ }
+
+    // Pre-generate UUIDs for inline images so we can embed their IDs in the description
+    // before ticket creation, then insert them with those IDs after.
+    const inlineImageIds = descriptionImageFiles.map(() => randomUUID())
+
+    let description = parsed.data.description ?? ''
+    inlineImageIds.forEach((imgId, idx) => {
+      description = description.replace(`__IMGPASTE_${idx}__`, `/api/ticket-images/${imgId}`)
+    })
 
     // Guard: prevent grandchildren (max one level of nesting)
     if (parentId) {
@@ -162,9 +185,9 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     if (error || !created) return sendError('Création du ticket échouée', 500)
 
-    // Upload files and insert attachment rows
-    if (files.length > 0) {
-      const uploads = await Promise.all(files.map(uploadFile))
+    // Upload regular file attachments
+    if (attachmentFiles.length > 0) {
+      const uploads = await Promise.all(attachmentFiles.map(uploadFile))
       const attachmentRows = uploads.map((u) => ({
         ticket_id: created.id,
         storage_key: u.storageKey,
@@ -175,6 +198,34 @@ export async function POST(request: NextRequest, { params }: Params) {
       }))
       const { error: attErr } = await supabaseAdmin.from('attachments').insert(attachmentRows)
       if (attErr) console.error('[ticket POST] attachments insert error:', attErr)
+    }
+
+    // Upload inline description images and insert with pre-generated IDs
+    if (descriptionImageFiles.length > 0) {
+      const uploads = await Promise.all(descriptionImageFiles.map(uploadFile))
+      const imageRows = uploads.map((u, idx) => ({
+        id: inlineImageIds[idx],
+        ticket_id: created.id,
+        storage_key: u.storageKey,
+        filename: u.filename,
+        originalname: u.originalname,
+        mime_type: u.mimeType,
+        size: u.size,
+      }))
+      const { error: imgErr } = await supabaseAdmin.from('ticket_images').insert(imageRows)
+      if (imgErr) console.error('[ticket POST] ticket_images insert error:', imgErr)
+    }
+
+    // Insert todos
+    if (todosPayload.length > 0) {
+      const todoRows = todosPayload.map((t, idx) => ({
+        ticket_id: created.id,
+        text: t.text,
+        done: t.done,
+        order: idx,
+      }))
+      const { error: todoErr } = await supabaseAdmin.from('ticket_todos').insert(todoRows)
+      if (todoErr) console.error('[ticket POST] ticket_todos insert error:', todoErr)
     }
 
     // Return full ticket with joins

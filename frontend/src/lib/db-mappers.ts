@@ -12,6 +12,7 @@ import type {
   NotificationType,
   PendingInvitation,
   Ticket,
+  TicketTodo,
   User,
   Workspace,
   WorkspaceMember,
@@ -63,6 +64,16 @@ export interface DbWorkspaceMember {
   user: DbProfile
 }
 
+export interface DbTicketTodo {
+  id: string
+  ticket_id: string
+  text: string
+  done: boolean
+  order: number
+  created_at: string
+  updated_at: string
+}
+
 export interface DbTicket {
   id: string
   workspace_id: string
@@ -81,6 +92,7 @@ export interface DbTicket {
   reporter: DbProfile
   assignee: DbProfile | null
   attachments: DbAttachment[]
+  ticket_todos?: DbTicketTodo[]
 }
 
 export interface DbAttachment {
@@ -193,6 +205,17 @@ export function mapAttachment(row: DbAttachment): Attachment {
   }
 }
 
+export function mapTicketTodo(row: DbTicketTodo): TicketTodo {
+  return {
+    _id: row.id,
+    text: row.text,
+    done: row.done,
+    order: row.order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
 export function mapTicket(row: DbTicket): Ticket {
   return {
     _id: row.id,
@@ -205,6 +228,9 @@ export function mapTicket(row: DbTicket): Ticket {
     reporter: mapProfile(row.reporter),
     assignee: row.assignee ? mapProfile(row.assignee) : null,
     attachments: (row.attachments ?? []).map(mapAttachment),
+    todos: (row.ticket_todos ?? [])
+      .sort((a, b) => a.order - b.order)
+      .map(mapTicketTodo),
     order: row.order,
     parentId: row.parent_id ?? null,
     createdAt: row.created_at,

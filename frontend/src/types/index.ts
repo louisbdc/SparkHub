@@ -87,6 +87,15 @@ export interface Message {
   updatedAt: string
 }
 
+export interface TicketTodo {
+  _id: string
+  text: string
+  done: boolean
+  order: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Ticket {
   _id: string
   workspace: string
@@ -98,6 +107,7 @@ export interface Ticket {
   reporter: User
   assignee: User | null
   attachments: Attachment[]
+  todos: TicketTodo[]
   order: number
   parentId: string | null
   hasUnreadComments?: boolean
@@ -141,6 +151,7 @@ export interface CreateTicketDto {
   type: TicketType
   assigneeId?: string
   parentId?: string | null
+  todos?: { text: string; done: boolean }[]
 }
 
 export interface UpdateTicketDto {
