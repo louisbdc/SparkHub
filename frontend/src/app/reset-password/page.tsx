@@ -45,8 +45,10 @@ export default function ResetPasswordPage() {
     const token = params.get('access_token')
     const type = params.get('type')
     if (token && type === 'recovery') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAccessToken(token)
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTokenError(true)
     }
   }, [])

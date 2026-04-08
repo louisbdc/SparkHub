@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ticketsApi } from '@/lib/api'
-import type { CreateTicketDto, Ticket, TicketPriority, TicketStatus, TicketTodo, TicketType, UpdateTicketDto } from '@/types'
+import type { CreateTicketDto, Ticket, TicketPriority, TicketStatus, TicketType, UpdateTicketDto } from '@/types'
 
 const ticketsKey = (workspaceId: string) => ['tickets', workspaceId]
 const childTicketsKey = (workspaceId: string, parentId: string) => ['tickets', workspaceId, 'children', parentId]

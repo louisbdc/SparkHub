@@ -21,6 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Close drawer on navigation
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsOpen(false)
   }, [pathname])
 

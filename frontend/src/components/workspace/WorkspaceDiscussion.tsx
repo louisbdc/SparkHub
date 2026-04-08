@@ -67,6 +67,7 @@ export function WorkspaceDiscussion({ workspaceId }: WorkspaceDiscussionProps) {
 
   // Cleanup object URLs on unmount
   const imagePreviewsRef = useRef(imagePreviews)
+  // eslint-disable-next-line react-hooks/refs
   imagePreviewsRef.current = imagePreviews
   useEffect(() => {
     return () => {

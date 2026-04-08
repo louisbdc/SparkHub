@@ -97,7 +97,7 @@ export function InviteMemberDialog({ workspaceId }: InviteMemberDialogProps) {
                 inviteMember.reset()
               }}
             >
-              Inviter quelqu'un d'autre
+              Inviter quelqu&apos;un d&apos;autre
             </Button>
           </div>
         ) : (
@@ -152,7 +152,7 @@ export function InviteMemberDialog({ workspaceId }: InviteMemberDialogProps) {
               {inviteMember.isPending && (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               )}
-              Envoyer l'invitation
+              Envoyer l&apos;invitation
             </Button>
           </form>
         )}

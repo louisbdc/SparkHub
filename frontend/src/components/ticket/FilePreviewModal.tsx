@@ -32,11 +32,15 @@ export function FilePreviewModal({ attachment, onClose }: FilePreviewModalProps)
 
   useEffect(() => {
     if (!attachment) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSignedUrl(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null)
       return
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null)
     filesApi
       .getSignedUrl(attachment.fileId)

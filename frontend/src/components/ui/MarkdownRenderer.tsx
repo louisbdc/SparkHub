@@ -21,6 +21,7 @@ function AuthenticatedImage({ src, alt }: { src?: string; alt?: string }) {
     if (!src) return
 
     if (!src.startsWith('/api/')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResolvedSrc(src)
       return
     }

@@ -342,7 +342,7 @@ export const ticketsApi = {
     const hasFiles = (files && files.length > 0) || (descriptionImages && descriptionImages.length > 0)
 
     let body: FormData | CreateTicketDto
-    let headers: Record<string, string> = {}
+    const headers: Record<string, string> = {}
 
     if (hasFiles) {
       const form = new FormData()
@@ -377,7 +377,7 @@ export const ticketsApi = {
     const hasFiles = (files && files.length > 0) || (descriptionImages && descriptionImages.length > 0)
 
     let body: FormData | typeof payload
-    let headers: Record<string, string> = {}
+    const headers: Record<string, string> = {}
 
     if (hasFiles) {
       const form = new FormData()

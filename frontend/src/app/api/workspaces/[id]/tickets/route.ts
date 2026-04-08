@@ -60,7 +60,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     }
 
     const ticketIds = tickets?.map((t) => t.id) ?? []
-    let readsMap = new Map<string, string>()
+    const readsMap = new Map<string, string>()
 
     if (ticketIds.length > 0) {
       const { data: reads } = await supabaseAdmin
@@ -104,8 +104,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (!allowed) return sendError('Accès refusé', 403)
 
     let fields: Record<string, unknown> = {}
-    let attachmentFiles: File[] = []
-    let descriptionImageFiles: File[] = []
+    const attachmentFiles: File[] = []
+    const descriptionImageFiles: File[] = []
 
     const contentType = request.headers.get('content-type') ?? ''
     if (contentType.includes('multipart/form-data')) {

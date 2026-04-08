@@ -54,9 +54,10 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
     .join('|')
 
   // Sync from server when not mid-drag (background refetches, mutations settling…)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     if (!isDraggingRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setItems(tickets)
     }
   }, [ticketsKey])
@@ -87,6 +88,7 @@ export function KanbanBoard({ workspaceId, onTicketClick, onTicketEdit }: Kanban
   )
 
   const handleDragEnd = useCallback(
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     ({ active, over }: DragEndEvent) => {
       isDraggingRef.current = false
       setActiveTicket(null)

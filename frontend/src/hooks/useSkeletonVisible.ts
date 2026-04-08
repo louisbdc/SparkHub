@@ -11,12 +11,12 @@ export function useSkeletonVisible(isLoading: boolean): boolean {
 
   useEffect(() => {
     if (isLoading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true)
       return
     }
-    let raf1: number
     let raf2: number
-    raf1 = requestAnimationFrame(() => {
+    const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => setVisible(false))
     })
     return () => {

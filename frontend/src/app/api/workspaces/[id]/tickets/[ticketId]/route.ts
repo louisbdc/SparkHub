@@ -73,8 +73,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (!existing) return sendError('Ticket introuvable', 404)
 
     let fields: Record<string, unknown> = {}
-    let attachmentFiles: File[] = []
-    let descriptionImageFiles: File[] = []
+    const attachmentFiles: File[] = []
+    const descriptionImageFiles: File[] = []
 
     const contentType = request.headers.get('content-type') ?? ''
     if (contentType.includes('multipart/form-data')) {

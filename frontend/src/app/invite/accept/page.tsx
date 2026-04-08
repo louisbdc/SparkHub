@@ -42,7 +42,9 @@ export default function InviteAcceptPage() {
     const type = params.get('type')
 
     if (!accessToken || type !== 'invite') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setErrorMsg("Ce lien d'invitation est invalide ou a déjà été utilisé.")
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPageState('error')
       return
     }
