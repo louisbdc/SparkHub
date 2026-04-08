@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHash } from 'crypto'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { isWorkspaceMemberOrOwner, listWorkspacesForUser, fetchWorkspace } from '@/lib/workspace-queries'
@@ -10,14 +11,13 @@ import { createSignedUrl } from '@/lib/file-upload'
 
 const SERVER_INFO = { name: 'sparkhub', version: '1.0.0' }
 const PROTOCOL_VERSION = '2024-11-05'
-const MCP_API_KEY = process.env.MCP_API_KEY
-const MCP_USER_ID = process.env.MCP_USER_ID
 
 const TICKET_SELECT = `
   *,
   reporter:profiles!tickets_reporter_id_fkey(*),
   assignee:profiles!tickets_assignee_id_fkey(*),
-  attachments(*)
+  attachments(*),
+  ticket_todos(*)
 `
 
 const COMMENT_SELECT = `*, author:profiles!comments_author_id_fkey(*)`
@@ -132,6 +132,22 @@ const TOOLS = [
     },
   },
   {
+    name: 'update_ticket',
+    description: 'Modifier les champs d\'un ticket : titre, description, priorité, type, assignee. Au moins un champ est requis.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        workspaceId: { type: 'string', description: 'ID du workspace' },
+        ticketId: { type: 'string', description: 'ID du ticket' },
+        title: { type: 'string', description: 'Nouveau titre' },
+        description: { type: 'string', description: 'Nouvelle description (markdown, supporte les GFM task lists)' },
+        priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'], description: 'Nouvelle priorité' },
+        type: { type: 'string', enum: ['bug', 'feature', 'task', 'improvement'], description: 'Nouveau type' },
+      },
+      required: ['workspaceId', 'ticketId'],
+    },
+  },
+  {
     name: 'add_comment',
     description: 'Ajouter un commentaire sur un ticket.',
     inputSchema: {
@@ -172,6 +188,15 @@ const updateTicketStatusSchema = z.object({
 })
 const listAttachmentsSchema = z.object({ workspaceId: z.string(), ticketId: z.string() })
 const getAttachmentSchema = z.object({ workspaceId: z.string(), ticketId: z.string(), attachmentId: z.string() })
+const updateTicketSchema = z.object({
+  workspaceId: z.string(),
+  ticketId: z.string(),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(5000).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  type: z.enum(['bug', 'feature', 'task', 'improvement']).optional(),
+})
+
 const addCommentSchema = z.object({
   workspaceId: z.string(),
   ticketId: z.string(),
@@ -404,6 +429,38 @@ async function executeTool(name: string, args: Record<string, unknown>, userId: 
       }, null, 2))
     }
 
+    case 'update_ticket': {
+      const { workspaceId, ticketId, title, description, priority, type } = updateTicketSchema.parse(args)
+      const allowed = await isWorkspaceMemberOrOwner(workspaceId, userId)
+      if (!allowed) return textContent('Acces refuse a ce workspace')
+
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+      if (title !== undefined) updates.title = title
+      if (description !== undefined) updates.description = description
+      if (priority !== undefined) updates.priority = priority
+      if (type !== undefined) updates.type = type
+
+      if (Object.keys(updates).length === 1) {
+        return textContent('Aucun champ a mettre a jour fourni')
+      }
+
+      const { error } = await supabaseAdmin
+        .from('tickets')
+        .update(updates)
+        .eq('id', ticketId)
+        .eq('workspace_id', workspaceId)
+
+      if (error) return textContent('Mise a jour du ticket echouee')
+
+      const { data: ticket } = await supabaseAdmin
+        .from('tickets')
+        .select(TICKET_SELECT)
+        .eq('id', ticketId)
+        .single()
+
+      return textContent(JSON.stringify(mapTicket(ticket), null, 2))
+    }
+
     case 'add_comment': {
       const { workspaceId, ticketId, content } = addCommentSchema.parse(args)
       const allowed = await isWorkspaceMemberOrOwner(workspaceId, userId)
@@ -475,15 +532,26 @@ export async function POST(request: NextRequest) {
       return jsonRpcResult(body.id, {})
     }
 
-    // All other methods require API key auth
+    // All other methods require personal token auth
     const authHeader = request.headers.get('authorization') ?? ''
-    const providedKey = authHeader.replace('Bearer ', '')
+    const rawToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
 
-    if (!MCP_API_KEY || !MCP_USER_ID || providedKey !== MCP_API_KEY) {
-      return jsonRpcError(body.id, -32600, 'Cle API MCP invalide')
+    if (!rawToken) {
+      return jsonRpcError(body.id, -32600, 'Token API manquant')
     }
 
-    const userId = MCP_USER_ID
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+    const { data: tokenRow } = await supabaseAdmin
+      .from('personal_api_tokens')
+      .select('user_id')
+      .eq('token_hash', tokenHash)
+      .maybeSingle()
+
+    if (!tokenRow) {
+      return jsonRpcError(body.id, -32600, 'Token API invalide')
+    }
+
+    const userId = tokenRow.user_id as string
 
     if (body.method === 'tools/list') {
       return jsonRpcResult(body.id, { tools: TOOLS })

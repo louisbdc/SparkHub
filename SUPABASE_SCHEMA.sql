@@ -249,3 +249,14 @@ create table if not exists ticket_images (
 );
 create index if not exists idx_ticket_images_ticket on ticket_images(ticket_id);
 alter table ticket_images enable row level security;
+
+-- ── Personal API Tokens (for MCP / external integrations) ────────────────────
+create table if not exists personal_api_tokens (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references profiles(id) on delete cascade,
+  name        text not null,
+  token_hash  text not null unique,   -- SHA-256 of the raw token (never stored plain)
+  created_at  timestamptz not null default now()
+);
+create index if not exists idx_personal_api_tokens_user on personal_api_tokens(user_id);
+alter table personal_api_tokens enable row level security;

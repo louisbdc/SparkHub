@@ -619,3 +619,25 @@ export const filesApi = {
     await apiClient.delete(`/files/${fileId}`)
   },
 }
+
+export interface ApiToken {
+  id: string
+  name: string
+  createdAt: string
+}
+
+export const tokensApi = {
+  list: async (): Promise<ApiToken[]> => {
+    const { data } = await apiClient.get<ApiResponse<{ tokens: ApiToken[] }>>('/tokens')
+    return data.data!.tokens
+  },
+
+  create: async (name: string): Promise<{ token: string } & ApiToken> => {
+    const { data } = await apiClient.post<ApiResponse<{ token: string } & ApiToken>>('/tokens', { name })
+    return data.data!
+  },
+
+  revoke: async (id: string): Promise<void> => {
+    await apiClient.delete(`/tokens/${id}`)
+  },
+}

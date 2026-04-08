@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react'
 import { SettingCard } from '@/components/settings/SettingCard'
 import { ProfileForm } from '@/components/settings/ProfileForm'
 import { PasswordForm } from '@/components/settings/PasswordForm'
+import { ApiTokensForm } from '@/components/settings/ApiTokensForm'
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { useMobileSidebar } from '@/components/layout/AppShell'
 
@@ -40,6 +41,13 @@ export default function SettingsPage() {
             description="Modifiez votre mot de passe de connexion."
           >
             <PasswordForm />
+          </SettingCard>
+
+          <SettingCard
+            title="Tokens API"
+            description="Tokens d'accès pour connecter Claude Desktop ou d'autres outils via MCP."
+          >
+            <ApiTokensForm />
           </SettingCard>
         </div>
       </div>
