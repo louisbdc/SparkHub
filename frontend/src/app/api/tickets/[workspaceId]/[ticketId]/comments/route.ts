@@ -75,6 +75,14 @@ export async function POST(request: NextRequest, { params }: Params) {
       .eq('id', ticketId)
       .single()
 
+    // Mark ticket as read for the author — they just wrote the comment, no blue dot for them
+    await supabaseAdmin
+      .from('ticket_reads')
+      .upsert(
+        { user_id: userId, ticket_id: ticketId, last_read_at: new Date().toISOString() },
+        { onConflict: 'user_id, ticket_id' }
+      )
+
     if (ticket) {
       const workspaceLink = `/workspaces/${workspaceId}/kanban?ticket=${ticketId}`
       const notifBody = `Nouveau commentaire sur le ticket "${ticket.title}"`
