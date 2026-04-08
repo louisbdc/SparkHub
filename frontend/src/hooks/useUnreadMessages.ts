@@ -3,8 +3,9 @@
 import { useEffect, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { messagesApi } from '@/lib/api'
-import { createSupabaseBrowserClient } from '@/lib/supabase/client'
+import { getSocket } from '@/lib/socket'
 import { useCurrentUser } from '@/hooks/useAuth'
+import type { Message } from '@/types'
 
 export function useUnreadMessages(workspaceId: string, isActive = false) {
   const queryClient = useQueryClient()
@@ -18,33 +19,23 @@ export function useUnreadMessages(workspaceId: string, isActive = false) {
   })
 
   useEffect(() => {
-    if (!currentUser) return
+    if (!currentUser || !workspaceId) return
 
-    const supabase = createSupabaseBrowserClient()
-    const channel = supabase
-      .channel(`messages:unread:${workspaceId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `workspace_id=eq.${workspaceId}`,
-        },
-        (payload) => {
-          const msg = payload.new as { author_id: string }
-          if (msg.author_id === currentUser._id) return
-          if (isActive) return
-          queryClient.setQueryData(
-            ['messages', 'unread', workspaceId],
-            (prev: { count: number } | undefined) => ({ count: (prev?.count ?? 0) + 1 })
-          )
-        }
+    const socket = getSocket()
+
+    const handleMessage = ({ message }: { message: Message }) => {
+      if (message.author._id === currentUser._id) return
+      if (isActive) return
+      queryClient.setQueryData(
+        ['messages', 'unread', workspaceId],
+        (prev: { count: number } | undefined) => ({ count: (prev?.count ?? 0) + 1 })
       )
-      .subscribe()
+    }
+
+    socket.on('workspace:message', handleMessage)
 
     return () => {
-      supabase.removeChannel(channel)
+      socket.off('workspace:message', handleMessage)
     }
   }, [workspaceId, currentUser, isActive, queryClient])
 

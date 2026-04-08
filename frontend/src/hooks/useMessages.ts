@@ -1,87 +1,18 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { messagesApi } from '@/lib/api'
-import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { Message } from '@/types'
 
 const messagesKey = (workspaceId: string) => ['messages', workspaceId]
 
 export function useMessages(workspaceId: string) {
-  const queryClient = useQueryClient()
-
-  // Initial fetch — no polling, Realtime handles updates
-  const query = useQuery({
+  // Initial fetch — Socket.io (useWorkspaceSocket) handles real-time updates
+  return useQuery({
     queryKey: messagesKey(workspaceId),
     queryFn: () => messagesApi.list(workspaceId),
     enabled: Boolean(workspaceId),
   })
-
-  // Supabase Realtime subscription
-  useEffect(() => {
-    if (!workspaceId) return
-
-    const supabase = createSupabaseBrowserClient()
-    const pendingTimeouts: ReturnType<typeof setTimeout>[] = []
-
-    const channel = supabase
-      .channel(`messages:${workspaceId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `workspace_id=eq.${workspaceId}`,
-        },
-        async (payload) => {
-          if (payload.eventType === 'INSERT') {
-            // Socket.io (useWorkspaceSocket) is the primary channel for INSERTs
-            // and delivers enriched messages. Only invalidate as a fallback if
-            // the message hasn't been added by the socket handler within 3s.
-            const newId = (payload.new as { id: string }).id
-            const t = setTimeout(() => {
-              const current = queryClient.getQueryData<Message[]>(messagesKey(workspaceId))
-              if (current && !current.some((m) => m._id === newId)) {
-                queryClient.invalidateQueries({ queryKey: messagesKey(workspaceId) })
-              }
-            }, 3_000)
-            pendingTimeouts.push(t)
-          } else if (payload.eventType === 'UPDATE') {
-            // For updates, fetch the enriched version (no socket event covers this)
-            const updatedId = (payload.new as { id: string }).id
-            try {
-              const message = await messagesApi.getById(workspaceId, updatedId)
-              queryClient.setQueryData<Message[]>(
-                messagesKey(workspaceId),
-                (prev) => prev?.map((m) => (m._id === message._id ? message : m)) ?? []
-              )
-            } catch {
-              // Delayed fallback instead of immediate full invalidation
-              const t = setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: messagesKey(workspaceId) })
-              }, 5_000)
-              pendingTimeouts.push(t)
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const deletedId = (payload.old as { id: string }).id
-            queryClient.setQueryData<Message[]>(
-              messagesKey(workspaceId),
-              (prev) => prev?.filter((m) => m._id !== deletedId) ?? []
-            )
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      pendingTimeouts.forEach(clearTimeout)
-      supabase.removeChannel(channel)
-    }
-  }, [workspaceId, queryClient])
-
-  return query
 }
 
 type CreatePayload = {

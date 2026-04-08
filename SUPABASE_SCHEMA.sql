@@ -169,17 +169,18 @@ create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
 
--- ── Disable RLS (auth enforced in route handlers) ────────────────────────────
-alter table profiles          disable row level security;
-alter table workspaces        disable row level security;
-alter table workspace_members disable row level security;
-alter table tickets           disable row level security;
-alter table comments          disable row level security;
-alter table messages          disable row level security;
-alter table attachments       disable row level security;
-alter table notifications     disable row level security;
-alter table message_reads            disable row level security;
-alter table workspace_invitations    disable row level security;
+-- ── Enable RLS (API routes use service role which bypasses RLS) ──────────────
+-- Anon key is public — RLS prevents direct DB access without service role.
+alter table profiles          enable row level security;
+alter table workspaces        enable row level security;
+alter table workspace_members enable row level security;
+alter table tickets           enable row level security;
+alter table comments          enable row level security;
+alter table messages          enable row level security;
+alter table attachments       enable row level security;
+alter table notifications     enable row level security;
+alter table message_reads            enable row level security;
+alter table workspace_invitations    enable row level security;
 
 -- ── Indexes ───────────────────────────────────────────────────────────────────
 create index if not exists idx_workspace_members_user on workspace_members(user_id);
@@ -217,4 +218,4 @@ create table if not exists ticket_reads (
   primary key (user_id, ticket_id)
 );
 create index if not exists idx_ticket_reads_user on ticket_reads(user_id);
-alter table ticket_reads disable row level security;
+alter table ticket_reads enable row level security;
