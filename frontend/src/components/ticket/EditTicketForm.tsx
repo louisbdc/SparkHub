@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useEditTicket } from '@/hooks/useTickets'
-import { TodoEditor, type TodoItem } from './TodoEditor'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_TYPE_LABELS,
@@ -54,10 +53,6 @@ interface EditTicketFormProps {
 export function EditTicketForm({ ticket, workspaceId, members, onSuccess, onCancel }: EditTicketFormProps) {
   const editTicket = useEditTicket(workspaceId)
   const [assigneeValue, setAssigneeValue] = useState<string>(ticket.assignee?._id ?? 'none')
-  const [todos, setTodos] = useState<TodoItem[]>(() =>
-    ticket.todos.map((t) => ({ text: t.text, done: t.done }))
-  )
-  // Map from blob URL → File for newly pasted inline images in this edit session
   const [pendingImages, setPendingImages] = useState<Map<string, File>>(new Map())
 
   useEffect(() => {
@@ -112,7 +107,6 @@ export function EditTicketForm({ ticket, workspaceId, members, onSuccess, onCanc
       ...values,
       description,
       assigneeId: assigneeValue === 'none' ? null : assigneeValue,
-      todos: todos.map((t) => ({ text: t.text, done: t.done })),
     }
 
     editTicket.mutate(
@@ -154,12 +148,6 @@ export function EditTicketForm({ ticket, workspaceId, members, onSuccess, onCanc
           onValueChange={(v) => setValue('description', v)}
           {...register('description')}
         />
-      </div>
-
-      {/* Todos */}
-      <div className="space-y-2">
-        <Label>Tâches</Label>
-        <TodoEditor todos={todos} onChange={setTodos} />
       </div>
 
       {/* Status + Priority */}

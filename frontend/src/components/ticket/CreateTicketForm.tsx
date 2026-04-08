@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/select'
 import { useCreateTicket } from '@/hooks/useTickets'
 import { useWorkspace } from '@/hooks/useWorkspaces'
-import { TodoEditor, type TodoItem } from './TodoEditor'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_TYPE_LABELS,
@@ -51,8 +50,6 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
   const createTicket = useCreateTicket(workspaceId)
   const { data: workspace } = useWorkspace(workspaceId)
   const [files, setFiles] = useState<File[]>([])
-  const [todos, setTodos] = useState<TodoItem[]>([])
-  // Map from blob URL → File for pending inline images
   const [pendingImages, setPendingImages] = useState<Map<string, File>>(new Map())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -136,7 +133,7 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
 
     createTicket.mutate(
       {
-        payload: { ...values, description, todos: todos.length > 0 ? todos : undefined },
+        payload: { ...values, description },
         files: files.length > 0 ? files : undefined,
         descriptionImages: imageFiles.length > 0 ? imageFiles : undefined,
       },
@@ -145,7 +142,6 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
           revokePendingImages(pendingImages)
           reset()
           setFiles([])
-          setTodos([])
           setPendingImages(new Map())
           setAssigneeValue(soloDefault?._id ?? 'none')
           setValue('assigneeId', soloDefault?._id)
@@ -185,12 +181,6 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
         {errors.description && (
           <p className="text-xs text-destructive">{errors.description.message}</p>
         )}
-      </div>
-
-      {/* Todos */}
-      <div className="space-y-2">
-        <Label>Tâches</Label>
-        <TodoEditor todos={todos} onChange={setTodos} />
       </div>
 
       {/* Type + Priority row */}
@@ -311,7 +301,6 @@ export function CreateTicketForm({ workspaceId, onSuccess }: CreateTicketFormPro
           onClick={() => {
             revokePendingImages(pendingImages)
             setPendingImages(new Map())
-            setTodos([])
             setFiles([])
             reset()
           }}

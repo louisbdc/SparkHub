@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { SquareCheck } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 import { cn } from '@/lib/utils'
@@ -9,9 +10,7 @@ interface MarkdownTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAre
   value: string
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
   rows?: number
-  /** Called when the user pastes an image. The second argument inserts markdown at cursor. */
   onImagePaste?: (file: File, insertMarkdown: (md: string) => void) => void
-  /** Called with the new string value for programmatic insertions (e.g. image paste). */
   onValueChange?: (value: string) => void
 }
 
@@ -26,6 +25,24 @@ export function MarkdownTextarea({
 }: MarkdownTextareaProps) {
   const [tab, setTab] = useState<'write' | 'preview'>('write')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const insertAtCursor = (text: string) => {
+    const el = textareaRef.current
+    const start = el?.selectionStart ?? value.length
+    const end = el?.selectionEnd ?? value.length
+    // If we're at the start of a line or the field is empty, no newline prefix needed
+    const prefix = start > 0 && value[start - 1] !== '\n' ? '\n' : ''
+    const newValue = value.slice(0, start) + prefix + text + value.slice(end)
+    onValueChange?.(newValue)
+    // Restore focus and move cursor after inserted text
+    requestAnimationFrame(() => {
+      if (el) {
+        const cursor = start + prefix.length + text.length
+        el.focus()
+        el.setSelectionRange(cursor, cursor)
+      }
+    })
+  }
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (!onImagePaste) return
@@ -78,9 +95,21 @@ export function MarkdownTextarea({
         >
           Aperçu
         </button>
+
+        {/* Insert task shortcut — only shown in write tab */}
+        {tab === 'write' && (
+          <button
+            type="button"
+            title="Insérer une tâche (- [ ] )"
+            onClick={() => insertAtCursor('- [ ] ')}
+            className="ml-2 px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <SquareCheck className="w-3.5 h-3.5" />
+          </button>
+        )}
+
         <span className="ml-auto px-3 py-1.5 text-xs text-muted-foreground select-none">
-          Markdown
-          {onImagePaste && ' · Coller une image'}
+          {onImagePaste ? 'Markdown · images' : 'Markdown'}
         </span>
       </div>
 

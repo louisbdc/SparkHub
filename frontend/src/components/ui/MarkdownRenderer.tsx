@@ -10,20 +10,16 @@ import { cn } from '@/lib/utils'
 interface MarkdownRendererProps {
   content: string
   className?: string
+  /** Called when a GFM checkbox is toggled. Index = nth checkbox in the markdown. */
+  onToggleCheckbox?: (index: number, checked: boolean) => void
 }
 
-/**
- * Renders an <img> that may require auth (e.g. /api/ticket-images/:id).
- * For same-origin /api/ URLs, fetches a signed URL with the Bearer token first.
- * External URLs and blob: URLs are rendered directly.
- */
 function AuthenticatedImage({ src, alt }: { src?: string; alt?: string }) {
   const [resolvedSrc, setResolvedSrc] = useState<string | null>(null)
 
   useEffect(() => {
     if (!src) return
 
-    // Pass through external URLs and local blob previews directly
     if (!src.startsWith('/api/')) {
       setResolvedSrc(src)
       return
@@ -42,13 +38,14 @@ function AuthenticatedImage({ src, alt }: { src?: string; alt?: string }) {
   }, [src])
 
   if (!resolvedSrc) return null
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={resolvedSrc} alt={alt ?? 'image'} className="max-w-full rounded" />
-  )
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={resolvedSrc} alt={alt ?? 'image'} className="max-w-full rounded" />
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className, onToggleCheckbox }: MarkdownRendererProps) {
+  // Local counter reset on every render — tracks which checkbox is being clicked
+  let checkboxIndex = 0
+
   return (
     <div
       className={cn(
@@ -68,10 +65,24 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Intercept img tags: same-origin /api/ URLs need auth-resolved signed URLs
           img: ({ src, alt }) => (
             <AuthenticatedImage src={typeof src === 'string' ? src : undefined} alt={alt} />
           ),
+          input: ({ type, checked }) => {
+            if (type !== 'checkbox') return <input type={type} readOnly />
+            const idx = checkboxIndex++
+            return (
+              <input
+                type="checkbox"
+                checked={checked ?? false}
+                onChange={() => onToggleCheckbox?.(idx, !(checked ?? false))}
+                className={cn(
+                  'mr-1.5 rounded accent-primary',
+                  onToggleCheckbox ? 'cursor-pointer' : 'cursor-default'
+                )}
+              />
+            )
+          },
         }}
       >
         {content}

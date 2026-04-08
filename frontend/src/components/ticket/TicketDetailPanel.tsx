@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator'
 import { ChatBubble, TypingIndicator } from '@/components/ui/ChatBubble'
 import { useComments, useCreateComment, useDeleteComment } from '@/hooks/useComments'
 import { useCurrentUser } from '@/hooks/useAuth'
-import { useAddAttachments, useChildTickets, useTickets } from '@/hooks/useTickets'
+import { useAddAttachments, useChildTickets, useEditTicket, useTickets } from '@/hooks/useTickets'
 import { useWorkspaceMembers } from '@/hooks/useWorkspaceMembers'
 import { useTicketSocket } from '@/hooks/useTicketSocket'
 import { filesApi } from '@/lib/api'
@@ -26,7 +26,6 @@ import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 import { FilePreviewModal } from './FilePreviewModal'
 import { SubTicketsList } from './SubTicketsList'
 import { EditTicketForm } from './EditTicketForm'
-import { TodoList } from './TodoList'
 import {
   TICKET_PRIORITY_LABELS,
   TICKET_STATUS_LABELS,
@@ -71,6 +70,18 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
   const createComment = useCreateComment(workspaceId, ticket?._id ?? '')
   const deleteComment = useDeleteComment(workspaceId, ticket?._id ?? '')
   const addAttachments = useAddAttachments(workspaceId)
+  const editTicket = useEditTicket(workspaceId)
+
+  const handleCheckboxToggle = (index: number, checked: boolean) => {
+    if (!liveTicket) return
+    let count = -1
+    const newDescription = liveTicket.description.replace(/- \[([ x])\]/g, (match) => {
+      count++
+      if (count === index) return checked ? '- [x]' : '- [ ]'
+      return match
+    })
+    editTicket.mutate({ ticketId: liveTicket._id, payload: { description: newDescription } })
+  }
 
   // Auto-enter edit mode when opened from the kanban card's "Modifier" action
   useEffect(() => {
@@ -198,24 +209,13 @@ export function TicketDetailPanel({ ticket, workspaceId, onClose, onTicketChange
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                         Description
                       </p>
-                      <MarkdownRenderer content={liveTicket.description} />
+                      <MarkdownRenderer
+                        content={liveTicket.description}
+                        onToggleCheckbox={handleCheckboxToggle}
+                      />
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">Aucune description</p>
-                  )}
-
-                  {/* Todos */}
-                  {liveTicket.todos.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                        Tâches ({liveTicket.todos.filter((t) => t.done).length}/{liveTicket.todos.length})
-                      </p>
-                      <TodoList
-                        todos={liveTicket.todos}
-                        ticketId={liveTicket._id}
-                        workspaceId={workspaceId}
-                      />
-                    </div>
                   )}
 
                   {/* Attachments */}
