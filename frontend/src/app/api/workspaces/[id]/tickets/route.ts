@@ -62,7 +62,45 @@ export async function GET(request: NextRequest, { params }: Params) {
     const ticketIds = tickets?.map((t) => t.id) ?? []
     const readsMap = new Map<string, string>()
 
-    if (ticketIds.length > 0) {
+    // Map of parentId → sub-ticket stubs (id + last_comment_at) for unread check
+    const subTicketsByParent = new Map<string, { id: string; last_comment_at: string | null }[]>()
+
+    if (ticketIds.length > 0 && !parentId) {
+      // Fetch reads for parent tickets
+      const { data: reads } = await supabaseAdmin
+        .from('ticket_reads')
+        .select('ticket_id, last_read_at')
+        .eq('user_id', userId)
+        .in('ticket_id', ticketIds)
+
+      reads?.forEach((r) => readsMap.set(r.ticket_id, r.last_read_at))
+
+      // Fetch sub-tickets (only fields needed for unread detection)
+      const { data: subs } = await supabaseAdmin
+        .from('tickets')
+        .select('id, parent_id, last_comment_at')
+        .in('parent_id', ticketIds)
+
+      const subIds: string[] = []
+      for (const st of subs ?? []) {
+        const list = subTicketsByParent.get(st.parent_id) ?? []
+        list.push({ id: st.id, last_comment_at: st.last_comment_at as string | null })
+        subTicketsByParent.set(st.parent_id, list)
+        subIds.push(st.id)
+      }
+
+      // Fetch reads for sub-tickets
+      if (subIds.length > 0) {
+        const { data: subReads } = await supabaseAdmin
+          .from('ticket_reads')
+          .select('ticket_id, last_read_at')
+          .eq('user_id', userId)
+          .in('ticket_id', subIds)
+
+        subReads?.forEach((r) => readsMap.set(r.ticket_id, r.last_read_at))
+      }
+    } else if (ticketIds.length > 0) {
+      // Sub-ticket list view: just fetch reads for these tickets
       const { data: reads } = await supabaseAdmin
         .from('ticket_reads')
         .select('ticket_id, last_read_at')
@@ -78,12 +116,21 @@ export async function GET(request: NextRequest, { params }: Params) {
 
       if (t.last_comment_at) {
         const lastRead = readsMap.get(t.id)
-        if (!lastRead) {
-          hasUnreadComments = true
-        } else if (new Date(t.last_comment_at) > new Date(lastRead)) {
+        if (!lastRead || new Date(t.last_comment_at) > new Date(lastRead)) {
           hasUnreadComments = true
         }
       }
+
+      // Also flag parent if any sub-ticket has unread comments
+      if (!hasUnreadComments) {
+        const subs = subTicketsByParent.get(t.id) ?? []
+        hasUnreadComments = subs.some((st) => {
+          if (!st.last_comment_at) return false
+          const lastRead = readsMap.get(st.id)
+          return !lastRead || new Date(st.last_comment_at) > new Date(lastRead)
+        })
+      }
+
       return { ...ticket, hasUnreadComments }
     })
 
