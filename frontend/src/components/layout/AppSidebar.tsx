@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, LogOut, Plus, Settings } from 'lucide-react'
 import Image from 'next/image'
-import { cn } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useCurrentUser, useLogout } from '@/hooks/useAuth'
@@ -30,12 +30,7 @@ export function SidebarContent() {
   const showWorkspacesSkeleton = useSkeletonVisible(workspacesLoading)
   const logout = useLogout()
 
-  const initials = user?.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const initials = user?.name ? getInitials(user.name) : ''
 
   return (
     <>

@@ -10,7 +10,7 @@ const LIMIT = 5
 const WINDOW_MS = 60 * 60 * 1000
 
 const schema = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).transform((s) => s.trim()).refine((s) => s.length >= 1, 'Le nom ne peut pas être vide'),
   email: z.string().email(),
   password: z.string().min(8),
   role: z.enum(['dev', 'client']).default('client'),

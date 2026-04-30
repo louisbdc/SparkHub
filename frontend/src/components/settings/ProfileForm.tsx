@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useCurrentUser, useUpdateProfile } from '@/hooks/useAuth'
 import { TOKEN_KEY } from '@/lib/api'
+import { getInitials } from '@/lib/utils'
 
 const schema = z.object({
   name: z.string().min(2, 'Minimum 2 caractères').max(100),
@@ -134,9 +135,7 @@ export function ProfileForm() {
     updateProfile.mutate({ name: values.name })
   }
 
-  const initials = user?.name
-    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-    : '?'
+  const initials = user?.name ? getInitials(user.name) : '?'
 
   return (
     <>

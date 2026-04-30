@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 }
 
 const updateSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
+  name: z.string().min(1).max(100).transform((s) => s.trim()).refine((s) => s.length >= 1, 'Le nom ne peut pas être vide').optional(),
   avatar: z.string().url().nullable().optional(),
 })
 

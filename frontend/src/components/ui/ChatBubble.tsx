@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Check, Pencil, Reply, Trash2, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MessageImageItem } from '@/components/ui/MessageImageItem'
 import type { MessageImage, MessageReply } from '@/types'
@@ -71,7 +71,7 @@ export function ChatBubble({
         <Avatar className="w-7 h-7 shrink-0 mt-1">
           <AvatarImage src={authorAvatar ?? undefined} />
           <AvatarFallback className="text-[10px]">
-            {authorName[0].toUpperCase()}
+            {getInitials(authorName, 1)}
           </AvatarFallback>
         </Avatar>
       )}
@@ -241,7 +241,7 @@ export function TypingIndicator({ names }: TypingIndicatorProps) {
   return (
     <div className="flex items-center gap-2.5 px-1">
       <Avatar className="w-7 h-7 shrink-0">
-        <AvatarFallback className="text-[10px]">{names[0][0].toUpperCase()}</AvatarFallback>
+        <AvatarFallback className="text-[10px]">{getInitials(names[0], 1)}</AvatarFallback>
       </Avatar>
       <div className="flex items-center gap-2 bg-muted px-3.5 py-2 rounded-2xl rounded-tl-sm">
         <span className="text-xs text-muted-foreground italic">{label}</span>

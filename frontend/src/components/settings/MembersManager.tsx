@@ -8,20 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useRemoveMember, useCancelInvitation } from '@/hooks/useWorkspaces'
 import { useCurrentUser } from '@/hooks/useAuth'
 import type { Workspace } from '@/types'
+import { getInitials } from '@/lib/utils'
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
   dev: 'Dev',
   client: 'Client',
-}
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
 }
 
 interface Props {
@@ -68,7 +60,7 @@ export function MembersManager({ workspace }: Props) {
         <Avatar className="w-8 h-8">
           <AvatarImage src={workspace.owner.avatar ?? undefined} />
           <AvatarFallback className="text-xs">
-            {initials(workspace.owner.name)}
+            {getInitials(workspace.owner.name)}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
@@ -90,7 +82,7 @@ export function MembersManager({ workspace }: Props) {
         <div key={user._id} className="flex items-center gap-3 rounded-lg border p-3">
           <Avatar className="w-8 h-8">
             <AvatarImage src={user.avatar ?? undefined} />
-            <AvatarFallback className="text-xs">{initials(user.name)}</AvatarFallback>
+            <AvatarFallback className="text-xs">{getInitials(user.name)}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{user.name}</p>
