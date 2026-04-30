@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { sendSuccess, sendError } from '@/lib/api-utils'
 import { mapProfile } from '@/lib/db-mappers'
@@ -67,8 +68,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Sign in with the new password to get a fresh session
-    const { data: session, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    // Sign in with the new password to get a fresh session.
+    // Use a dedicated per-request anon client — never signInWithPassword on
+    // supabaseAdmin singleton or its service-role session gets replaced by the
+    // user JWT, breaking all subsequent RLS-protected DB queries.
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    const { data: session, error: signInError } = await authClient.auth.signInWithPassword({
       email: user.email!,
       password,
     })
